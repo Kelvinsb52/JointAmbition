@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import hummingbirdMark from '../assets/animations/JointAmbitionHummingbird1palegold.svg';
 
 const styles = `
   :root{
@@ -102,6 +103,9 @@ const styles = `
     border:1px solid rgba(255,255,255,.35);
     border-radius:50%;
     display:grid;place-items:center;
+  }
+  .hummingbird-mark img{
+    width:120px;height:120px;object-fit:contain;
   }
   .bird{
     width:110px;height:110px;position:relative;transform:rotate(-8deg);
@@ -412,12 +416,7 @@ export default function App() {
         <div className="hero-visual">
           <div className="visual-card">
             <div className="hummingbird-mark">
-              <div className="bird">
-                <div className="wing1" />
-                <div className="wing2" />
-                <div className="body" />
-                <div className="beak" />
-              </div>
+                <img src={hummingbirdMark} alt="Joint Ambition hummingbird mark" />
             </div>
             <div className="eyebrow" style={{ color: '#bdb6ad' }}>Signature Motif</div>
             <h3>Precision in motion.</h3>
