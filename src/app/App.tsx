@@ -105,7 +105,7 @@ const styles = `
     display:grid;place-items:center;
   }
   .hummingbird-mark img{
-    width:120px;height:120px;object-fit:contain;
+    <width:500></width:500>px;<height:500></height:500>px;object-fit:contain;
   }
   .bird{
     width:110px;height:110px;position:relative;transform:rotate(-8deg);
@@ -405,7 +405,7 @@ export default function App() {
           <div className="eyebrow">Brand Strategy & Identity Studio</div>
           <h1>Where vision parallels reality.</h1>
           <p className="lead">
-            Joint Ambition helps ventures close the gap between who they are and how they are perceived through strategy, identity, handcrafted applications, and custom web development.
+            Joint Ambition aligns what a business is with how it is perceived through strategy, identity systems, handcrafted brand applications, and custom web development.
           </p>
           <div className="hero-actions">
             <a className="pill dark" href="#strategy">Explore Strategy</a>
