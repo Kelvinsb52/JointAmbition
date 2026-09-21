@@ -83,18 +83,58 @@ const styles = `
   .hero-actions{display:flex;flex-wrap:wrap;gap:14px;margin-top:34px}
   .hero-visual{
     position:relative;display:flex;align-items:center;justify-content:center;
-    border-left:1px solid var(--line);
-    overflow:hidden;
-  }
-  .hero-visual:before{
-    content:"";
-    position:absolute;inset:10%;
     border:1px solid var(--line);
     border-radius:38px;
+    background:var(--paper);
+    overflow:hidden;
+    isolation:isolate;
+  }
+  .motif-stage{
+    position:relative;
+    width:min(460px,78%);
+    min-height:520px;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .botanical-layer{
+    --botanical-reach-x: clamp(48px, 6vw, 140px);
+    --botanical-reach-y: clamp(56px, 7vw, 170px);
+    position:absolute;
+    top:calc(-1 * var(--botanical-reach-y));
+    right:calc(-1 * var(--botanical-reach-x));
+    bottom:calc(-1 * var(--botanical-reach-y));
+    left:calc(-1 * var(--botanical-reach-x));
+    z-index:0;
+    pointer-events:none;
+    color:#b1a18b;
+  }
+  .botanical-layer svg{
+    display:block;
+    width:100%;
+    height:100%;
+  }
+  .foliage-top{
+    transform:translate(-8px, -18px) scale(1.04);
+    transform-origin:center top;
+    transform-box:fill-box;
+  }
+  .foliage-bottom{
+    transform:translate(8px, 16px) scale(1.04);
+    transform-origin:center bottom;
+    transform-box:fill-box;
+  }
+  .foliage-left{
+    transform:translate(-26px, -2px) scale(1.1);
+    transform-origin:left center;
+    transform-box:fill-box;
+  }
+  .foliage-right{
+    transform:translate(26px, -2px) scale(1.1);
+    transform-origin:right center;
+    transform-box:fill-box;
   }
   .visual-card{
-    position:relative;z-index:2;
-    width:min(460px,78%);
+    position:relative;z-index:1;
+    width:100%;
     min-height:520px;
     border-radius:34px;
     background:var(--ink);
@@ -469,15 +509,67 @@ export default function App() {
         </div>
 
         <div className="hero-visual">
-          <div className="visual-card">
-            <div className="hummingbird-mark">
-                <img src={hummingbirdMark} alt="Joint Ambition hummingbird mark" />
+          <div className="motif-stage">
+            <div className="botanical-layer" aria-hidden="true">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1400" preserveAspectRatio="xMidYMid meet" fill="currentColor" role="img" aria-hidden="true">
+                <g id="foliage-left" className="foliage-left">
+                  <path d="M218 1157C116 994 213 899 166 723C132 591 220 484 166 308C151 261 117 219 105 175C118 241 153 278 159 313C207 487 121 589 158 726C204 902 106 997 212 1161Z"/>
+                  <path d="M162,321 C204.5,264.3 165.1,150.1 94,99 C92.1,138.4 87.2,283.2 162,321Z"/>
+                  <path d="M185,456 C229,372.4 157.9,294.5 56,300 C76.5,325.1 107.7,454.2 185,456Z"/>
+                  <path d="M165,585 C231.2,562.5 243.2,467.8 195,404 C191.3,433.1 133.8,533.3 165,585Z"/>
+                  <path d="M160,725 C219.7,656.6 169.6,552.8 74,521 C72.4,560.1 62.8,705.9 160,725Z"/>
+                  <path d="M183,857 C209.3,782.2 144.6,733.6 64,757 C82.7,773.4 120.8,870.6 183,857Z"/>
+                  <path d="M170,951 C239.9,929.8 250.2,838.7 197,777 C194.6,805.1 136.6,901.3 170,951Z"/>
+                  <path d="M167,1060 C199.7,993.6 143.1,938 65,947 C72.5,973 92.8,1075.7 167,1060Z"/>
+                  <path d="M207,1157 C221.9,1101 171.7,1068.7 114,1090 C129.1,1100.4 163.1,1169 207,1157Z"/>
+                </g>
+                <g id="foliage-right" className="foliage-right">
+                  <path d="M982 1168C1100 1006 1007 915 1054 746C1094 603 1008 489 1060 324C1070 291 1095 262 1106 224C1086 265 1062 285 1053 320C1001 488 1084 605 1046 744C999 915 1089 1005 977 1164Z"/>
+                  <path d="M1056,338 C1151.1,318.5 1174.2,201.4 1110,115 C1104.2,151.4 1017.4,269.6 1056,338Z"/>
+                  <path d="M1030,476 C1104.9,497.9 1161.1,424.6 1145,341 C1120.7,357.6 1012.8,403.1 1030,476Z"/>
+                  <path d="M1046,573 C1092.9,528.3 1065.9,443.5 1001,408 C1002.4,436 988.4,544.4 1046,573Z"/>
+                  <path d="M1052,749 C1159.6,749.2 1191.7,646.3 1124,555 C1116.6,587.6 1013.7,679.6 1052,749Z"/>
+                  <path d="M1026,881 C1089.3,918.8 1146.9,867.9 1142,790 C1118.7,798.5 1018.8,812.1 1026,881Z"/>
+                  <path d="M1038,977 C1082.3,936.3 1059,854.9 1000,819 C998.4,846.1 981.6,948.8 1038,977Z"/>
+                  <path d="M1030,1081 C1095.9,1127.4 1147.8,1081.7 1135,1000 C1119.1,1014.1 1026.3,1022 1030,1081Z"/>
+                  <path d="M984,1166 C1023.2,1203 1077.5,1175.4 1091,1119 C1071.2,1120.4 993,1113.8 984,1166Z"/>
+                </g>
+                <g id="foliage-top" className="foliage-top">
+                  <path d="M194 201C322 154 402 114 553 123C604 126 603 140 621 148C604 132 607 121 554 117C408 104 315 148 190 196Z"/>
+                  <path d="M241,181 C325.6,196.5 371.3,114.4 338,29 C310.3,45.5 200.2,101.5 241,181Z"/>
+                  <path d="M362,136 C421.6,171.2 481.3,121.3 482,47 C455.3,51.1 354.1,62.7 362,136Z"/>
+                  <path d="M449,121 C487.2,220.1 588.4,211.3 644,115 C612.9,120.4 495.9,60.1 449,121Z"/>
+                  <path d="M319,151 C323.7,204 387.3,224.4 439,196 C422.1,182.6 364.1,122 319,151Z"/>
+                  <path d="M1008 202C927 140 842 123 744 133C699 138 701 152 683 160C707 142 704 144 747 140C849 131 925 150 1004 207Z"/>
+                  <path d="M972,183 C1042.9,137.1 1019.3,62.8 935,38 C945.2,60.1 918.2,158.1 972,183Z"/>
+                  <path d="M875,143 C907.4,76 853.5,26.8 777,43 C794.7,57 820.5,147.4 875,143Z"/>
+                  <path d="M802,135 C803.4,57.3 728.9,33.2 662,80 C681.5,96.1 744.5,178.6 802,135Z"/>
+                  <path d="M907,151 C865.6,108.1 812.9,135 803,197 C819.1,188.4 895.2,194.5 907,151Z"/>
+                </g>
+                <g id="foliage-bottom" className="foliage-bottom">
+                  <path d="M190 1201C314 1244 412 1300 564 1279C613 1272 610 1258 627 1248C608 1255 608 1267 562 1273C417 1293 313 1238 194 1196Z"/>
+                  <path d="M246,1221 C181.4,1310.6 244.5,1386.6 358,1374 C336.7,1352 324.8,1222 246,1221Z"/>
+                  <path d="M360,1266 C333.2,1345.2 398.4,1390 480,1359 C458.7,1346.8 418.8,1252.1 360,1266Z"/>
+                  <path d="M463,1281 C470.3,1353.5 549.7,1373 613,1327 C592.4,1308.4 519.4,1230.9 463,1281Z"/>
+                  <path d="M333,1256 C377.4,1300.9 432.1,1271.8 441,1206 C424.7,1216.1 345,1211 333,1256Z"/>
+                  <path d="M1007 1198C901 1263 816 1289 720 1280C678 1276 691 1263 672 1254C685 1271 676 1283 719 1287C820 1298 906 1270 1010 1203Z"/>
+                  <path d="M969,1227 C900.5,1238.1 889.1,1310.8 939,1365 C952.1,1344.7 1017.4,1273.7 969,1227Z"/>
+                  <path d="M873,1269 C801.2,1228.6 742.8,1285.7 754,1371 C781.7,1364.8 891.3,1350.5 873,1269Z"/>
+                  <path d="M782,1286 C720.9,1234.4 665.5,1275 671,1357 C687.4,1343.6 779.5,1343.2 782,1286Z"/>
+                  <path d="M909,1254 C920.3,1198.3 874.3,1176.4 824,1206 C835.2,1217.9 866.1,1280.3 909,1254Z"/>
+                </g>
+              </svg>
             </div>
-            <div className="eyebrow" style={{ color: '#bdb6ad' }}>Signature Motif</div>
-            <h3>Precision in motion.</h3>
-            <p>
-              The hummingbird represents controlled energy — detailed, agile, exacting, and impossible to ignore in presence.
-            </p>
+            <div className="visual-card">
+              <div className="hummingbird-mark">
+                  <img src={hummingbirdMark} alt="Joint Ambition hummingbird mark" />
+              </div>
+              <div className="eyebrow" style={{ color: '#bdb6ad' }}>Signature Motif</div>
+              <h3>Precision in motion.</h3>
+              <p>
+                The hummingbird represents controlled energy — detailed, agile, exacting, and impossible to ignore in presence.
+              </p>
+            </div>
           </div>
         </div>
       </section>
