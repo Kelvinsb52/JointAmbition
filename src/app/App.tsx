@@ -134,12 +134,13 @@ const styles = `
     box-shadow:0 30px 70px rgba(0,0,0,.16);
   }
   .hummingbird-mark{
-    position:absolute;top:46px;left:50%;
+    position:absolute;top:90px;left:50%;
     width:170px;height:170px;
     border:1px solid rgba(255,255,255,.35);
     border-radius:50%;
     display:grid;place-items:center;
-    transform:translateX(-50%);
+    transform:translateX(-50%) scale(1.375);
+    transform-origin:center;
   }
   .hummingbird-mark .ja-hummingbird{
     width:100%;
@@ -353,6 +354,10 @@ const styles = `
       min-height:460px;
       padding:30px;
       border-radius:30px;
+    }
+    .hummingbird-mark{
+      top:18px;
+      transform:translateX(-50%) scale(1.08);
     }
   }
 
