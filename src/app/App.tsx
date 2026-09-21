@@ -659,6 +659,7 @@ export default function App() {
           <form onSubmit={async (event) => {
             event.preventDefault();
             setFormStatus('sending');
+            console.log('[Inquiry] status: sending');
             const formData = new FormData(event.currentTarget);
             try {
               const response = await fetch('/api/inquiry', {
@@ -666,15 +667,20 @@ export default function App() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(Object.fromEntries(formData.entries())),
               });
+              const result = await response.json().catch(() => null);
+              console.log('[Inquiry] response:', { status: response.status, ok: response.ok, result });
 
               if (response.ok) {
                 event.currentTarget.reset();
                 setFormStatus('success');
+                console.log('[Inquiry] status: success');
               } else {
                 setFormStatus('error');
+                console.log('[Inquiry] status: error');
               }
             } catch {
               setFormStatus('error');
+              console.error('[Inquiry] status: error - request failed');
             }
           }}>
             <div className="form-grid">
