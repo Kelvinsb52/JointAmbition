@@ -660,7 +660,8 @@ export default function App() {
             event.preventDefault();
             setFormStatus('sending');
             console.log('[Inquiry] status: sending');
-            const formData = new FormData(event.currentTarget);
+            const form = event.currentTarget;
+            const formData = new FormData(form);
             try {
               const response = await fetch('/api/inquiry', {
                 method: 'POST',
@@ -671,16 +672,16 @@ export default function App() {
               console.log('[Inquiry] response:', { status: response.status, ok: response.ok, result });
 
               if (response.ok) {
-                event.currentTarget.reset();
+                form.reset();
                 setFormStatus('success');
                 console.log('[Inquiry] status: success');
               } else {
                 setFormStatus('error');
                 console.log('[Inquiry] status: error');
               }
-            } catch {
+            } catch (error) {
               setFormStatus('error');
-              console.error('[Inquiry] status: error - request failed');
+              console.error('[Inquiry] status: error - request failed', error);
             }
           }}>
             <div className="form-grid">
