@@ -104,17 +104,18 @@ const styles = `
     box-shadow:0 30px 70px rgba(0,0,0,.16);
   }
   .hummingbird-mark{
-    position:absolute;top:44px;left:38px;
+    position:absolute;top:46px;left:50%;
     width:170px;height:170px;
     border:1px solid rgba(255,255,255,.35);
     border-radius:50%;
     display:grid;place-items:center;
+    transform:translateX(-50%);
   }
   .hummingbird-mark img{
     width:100%;
     height:100%;
     object-fit:contain;
-    transform:scale(1.25);
+    transform:scale(1.18) translateY(4px);
     transform-origin:center;
   }
   .bird{
@@ -205,6 +206,45 @@ const styles = `
   form{border:1px solid var(--line);border-radius:30px;background:var(--paper);padding:30px}
   .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
   label{font-size:10px;text-transform:uppercase;letter-spacing:.2em;color:var(--muted)}
+  .select-wrap{position:relative;display:block;width:100%;margin-top:8px}
+  .select-wrap select{
+    width:100%;
+    appearance:none;
+    -webkit-appearance:none;
+    -moz-appearance:none;
+    border:1px solid var(--line);
+    border-radius:14px;
+    background:var(--paper2);
+    color:var(--ink);
+    padding:14px 42px 14px 14px;
+    font:inherit;
+    letter-spacing:0;
+    line-height:1.4;
+    min-height:48px;
+    outline:none;
+    transition:border-color .2s ease, box-shadow .2s ease, background-color .2s ease;
+  }
+  .select-wrap select:hover{border-color:var(--ink)}
+  .select-wrap select:focus-visible{
+    border-color:var(--ink);
+    background:var(--paper);
+    box-shadow:0 0 0 2px rgba(23,23,20,.14);
+    outline:none;
+  }
+  .select-wrap select:invalid{color:var(--muted)}
+  .select-wrap select option{color:var(--ink);background:var(--paper2)}
+  .select-wrap::after{
+    content:"";
+    position:absolute;
+    right:16px;
+    top:50%;
+    width:8px;
+    height:8px;
+    border-right:1.5px solid var(--muted);
+    border-bottom:1.5px solid var(--muted);
+    transform:translateY(-65%) rotate(45deg);
+    pointer-events:none;
+  }
   input,textarea{
     width:100%;margin-top:8px;border:1px solid var(--line);border-radius:14px;
     background:var(--paper2);padding:14px;font:inherit;color:var(--ink);outline:none;
@@ -694,8 +734,33 @@ export default function App() {
               <label>Business / Venture<input name="business" type="text" placeholder="Business name" /></label>
               <label className="full">Website or Instagram<input name="website" type="text" placeholder="URL or handle" /></label>
               <label className="full">What are you building or refining?<textarea name="message" placeholder="Tell us about your business, the current challenge, and what you want to change." required /></label>
-              <label>Desired Timeline<input name="timeline" type="text" placeholder="e.g. 6–8 weeks" /></label>
-              <label>Estimated Investment<input name="investment" type="text" placeholder="e.g. $5,000–$10,000" /></label>
+              <label htmlFor="timeline">Desired Timeline
+                <span className="select-wrap">
+                  <select id="timeline" name="timeline" defaultValue="" required>
+                    <option value="" disabled>Select a timeline</option>
+                    <option value="4 weeks or less">4 weeks or less</option>
+                    <option value="5–8 weeks">5–8 weeks</option>
+                    <option value="9–12 weeks">9–12 weeks</option>
+                    <option value="3–6 months">3–6 months</option>
+                    <option value="More than 6 months">More than 6 months</option>
+                    <option value="Flexible / Not sure yet">Flexible / Not sure yet</option>
+                  </select>
+                </span>
+              </label>
+              <label htmlFor="investment">Estimated Investment
+                <span className="select-wrap">
+                  <select id="investment" name="investment" defaultValue="" required>
+                    <option value="" disabled>Select an investment range</option>
+                    <option value="Up to $5,000">Up to $5,000</option>
+                    <option value="$5,000–$10,000">$5,000–$10,000</option>
+                    <option value="$10,000–$20,000">$10,000–$20,000</option>
+                    <option value="$20,000–$35,000">$20,000–$35,000</option>
+                    <option value="$35,000–$50,000">$35,000–$50,000</option>
+                    <option value="$50,000+">$50,000+</option>
+                    <option value="Not sure yet">Not sure yet</option>
+                  </select>
+                </span>
+              </label>
               <input name="websiteUrl" type="text" tabIndex={-1} autoComplete="off" aria-hidden="true" style={{ display: 'none' }} />
             </div>
             <button className="submit" type="submit" disabled={formStatus === 'sending'}>
