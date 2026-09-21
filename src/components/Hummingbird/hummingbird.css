@@ -1,0 +1,44 @@
+.ja-hummingbird {
+  --ja-hummingbird-size: 180px;
+  --ja-hummingbird-color: #eee7da;
+  --ja-hummingbird-stroke: 5.5;
+  -webkit-tap-highlight-color: transparent;
+  appearance: none;
+  box-sizing: border-box;
+  display: inline-grid;
+  place-items: center;
+  width: var(--ja-hummingbird-size);
+  max-width: 100%;
+  aspect-ratio: 1;
+  padding: 0;
+  margin: 0;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ja-hummingbird-color);
+  cursor: pointer;
+  vertical-align: middle;
+  touch-action: manipulation;
+}
+
+.ja-hummingbird[data-ring="true"] {
+  border-color: rgba(238, 231, 218, 0.38);
+}
+
+.ja-hummingbird:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 6px;
+}
+
+.ja-hummingbird > .ja-hummingbird__svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: var(--ja-hummingbird-stroke);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  shape-rendering: geometricPrecision;
+}
