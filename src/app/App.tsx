@@ -533,6 +533,7 @@ export default function App() {
         </div>
       </div>
 
+      <main>
       <section id="home" className="hero">
         <div className="hero-copy">
           <div className="eyebrow">Brand Strategy & Identity Studio</div>
@@ -858,6 +859,7 @@ export default function App() {
         </div>
       </section>
 
+      </main>
       <footer>
         <div className="wrap footer-inner">
           <div>Joint Ambition LLC</div>
