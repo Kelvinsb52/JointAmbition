@@ -111,7 +111,11 @@ const styles = `
     display:grid;place-items:center;
   }
   .hummingbird-mark img{
-    <width:500></width:500>px;<height:500></height:500>px;object-fit:contain;
+    width:100%;
+    height:100%;
+    object-fit:contain;
+    transform:scale(1.25);
+    transform-origin:center;
   }
   .bird{
     width:110px;height:110px;position:relative;transform:rotate(-8deg);
@@ -689,7 +693,7 @@ export default function App() {
               <label>Email<input name="email" type="email" placeholder="Your email" required /></label>
               <label>Business / Venture<input name="business" type="text" placeholder="Business name" /></label>
               <label className="full">Website or Instagram<input name="website" type="text" placeholder="URL or handle" /></label>
-              <label className="full">What are you building or refining?<textarea name="message" placeholder="Tell us about the venture, the current challenge, and what you want to change." required /></label>
+              <label className="full">What are you building or refining?<textarea name="message" placeholder="Tell us about your business, the current challenge, and what you want to change." required /></label>
               <label>Desired Timeline<input name="timeline" type="text" placeholder="e.g. 6–8 weeks" /></label>
               <label>Estimated Investment<input name="investment" type="text" placeholder="e.g. $5,000–$10,000" /></label>
               <input name="websiteUrl" type="text" tabIndex={-1} autoComplete="off" aria-hidden="true" style={{ display: 'none' }} />
