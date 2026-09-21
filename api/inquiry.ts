@@ -1,4 +1,5 @@
 import { Resend } from 'resend';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 const recipient = 'inquiries@jointambitions.com';
 const sender = 'Website Inquiry <website@jointambitions.com>';
@@ -16,17 +17,19 @@ type InquiryPayload = {
 
 const asText = (value: unknown) => (typeof value === 'string' ? value.trim() : '');
 
-export default async function handler(request: Request) {
+export default async function handler(request: VercelRequest, response: VercelResponse) {
   if (request.method !== 'POST') {
-    return Response.json({ error: 'Method not allowed.' }, { status: 405 });
+    return response.status(405).json({ error: 'Method not allowed.' });
   }
 
   try {
-    const data = await request.json() as InquiryPayload;
+    const data = (typeof request.body === 'string'
+      ? JSON.parse(request.body)
+      : request.body) as InquiryPayload;
 
     // Silently accept honeypot submissions so bots do not learn they were blocked.
     if (asText(data.websiteUrl)) {
-      return Response.json({ success: true });
+      return response.status(200).json({ success: true });
     }
 
     const name = asText(data.name);
@@ -38,22 +41,16 @@ export default async function handler(request: Request) {
     const investment = asText(data.investment);
 
     if (!name || !email || !message) {
-      return Response.json(
-        { error: 'Name, email, and message are required.' },
-        { status: 400 },
-      );
+      return response.status(400).json({ error: 'Name, email, and message are required.' });
     }
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return Response.json(
-        { error: 'Please provide a valid email address.' },
-        { status: 400 },
-      );
+      return response.status(400).json({ error: 'Please provide a valid email address.' });
     }
 
     if (!process.env.RESEND_API_KEY) {
       console.error('RESEND_API_KEY is not configured.');
-      return Response.json({ error: 'Email service is not configured.' }, { status: 500 });
+      return response.status(500).json({ error: 'Email service is not configured.' });
     }
 
     const resend = new Resend(process.env.RESEND_API_KEY);
@@ -77,12 +74,12 @@ export default async function handler(request: Request) {
 
     if (result.error) {
       console.error('Resend error:', result.error);
-      return Response.json({ error: 'Unable to send inquiry.' }, { status: 502 });
+      return response.status(502).json({ error: 'Unable to send inquiry.' });
     }
 
-    return Response.json({ success: true });
+    return response.status(200).json({ success: true });
   } catch (error) {
     console.error('Inquiry request error:', error);
-    return Response.json({ error: 'Invalid request.' }, { status: 400 });
+    return response.status(400).json({ error: 'Invalid request.' });
   }
 }
