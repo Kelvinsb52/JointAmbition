@@ -43,7 +43,13 @@ const styles = `
     max-width:1280px;margin:auto;padding:18px 28px;
     display:flex;align-items:center;justify-content:space-between;gap:22px;
   }
-  .brand{font-family:Georgia,serif;font-size:22px;letter-spacing:.03em}
+  .brand{
+    position:absolute;left:50%;transform:translateX(-50%);
+    display:flex;align-items:center;gap:8px;
+    font-family:'Gloock',Georgia,serif;font-size:22px;letter-spacing:.03em;
+    white-space:nowrap;
+  }
+  .brand img{width:39px;height:39px;object-fit:contain;flex:none}
   .nav-links{display:flex;gap:28px;font-size:11px;text-transform:uppercase;letter-spacing:.22em;color:var(--muted)}
   .nav-links a:hover{color:var(--ink)}
   .pill{
@@ -205,6 +211,7 @@ const styles = `
     margin-top:18px;width:100%;border:none;border-radius:999px;background:var(--ink);color:var(--paper);
     padding:15px 20px;text-transform:uppercase;letter-spacing:.2em;font-size:11px;cursor:pointer;
   }
+  .form-status{margin-top:14px;font-size:13px;line-height:1.6;color:#5d574f}
   footer{
     border-top:1px solid var(--line);padding:34px 0 46px;color:var(--muted);font-size:12px;
   }
@@ -341,6 +348,7 @@ const styles = `
 
 export default function App() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [formStatus, setFormStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
 
   useEffect(() => {
     document.body.style.overflow = isMenuOpen ? 'hidden' : '';
@@ -356,7 +364,10 @@ export default function App() {
 
       <nav className="nav">
         <div className="nav-inner">
-          <a className="brand" href="#home">Joint Ambition</a>
+          <a className="brand" href="#home">
+            <img src="/favicon.svg" alt="" aria-hidden="true" />
+            <span>Joint Ambition</span>
+          </a>
           <div className="nav-links">
             <a href="#studio">Studio</a>
             <a href="#strategy">Strategy</a>
@@ -645,16 +656,42 @@ export default function App() {
             </p>
           </div>
 
-          <form onSubmit={(event) => { event.preventDefault(); alert('Prototype only — inquiry form not connected yet.'); }}>
+          <form onSubmit={async (event) => {
+            event.preventDefault();
+            setFormStatus('sending');
+            const formData = new FormData(event.currentTarget);
+            try {
+              const response = await fetch('/api/inquiry', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(Object.fromEntries(formData.entries())),
+              });
+
+              if (response.ok) {
+                event.currentTarget.reset();
+                setFormStatus('success');
+              } else {
+                setFormStatus('error');
+              }
+            } catch {
+              setFormStatus('error');
+            }
+          }}>
             <div className="form-grid">
-              <label>Name<input type="text" placeholder="Your name" /></label>
-              <label>Business / Venture<input type="text" placeholder="Business name" /></label>
-              <label className="full">Website or Instagram<input type="text" placeholder="URL or handle" /></label>
-              <label className="full">What are you building or refining?<textarea placeholder="Tell us about the venture, the current challenge, and what you want to change." /></label>
-              <label>Desired Timeline<input type="text" placeholder="e.g. 6–8 weeks" /></label>
-              <label>Estimated Investment<input type="text" placeholder="e.g. $5,000–$10,000" /></label>
+              <label>Name<input name="name" type="text" placeholder="Your name" required /></label>
+              <label>Email<input name="email" type="email" placeholder="Your email" required /></label>
+              <label>Business / Venture<input name="business" type="text" placeholder="Business name" /></label>
+              <label className="full">Website or Instagram<input name="website" type="text" placeholder="URL or handle" /></label>
+              <label className="full">What are you building or refining?<textarea name="message" placeholder="Tell us about the venture, the current challenge, and what you want to change." required /></label>
+              <label>Desired Timeline<input name="timeline" type="text" placeholder="e.g. 6–8 weeks" /></label>
+              <label>Estimated Investment<input name="investment" type="text" placeholder="e.g. $5,000–$10,000" /></label>
+              <input name="websiteUrl" type="text" tabIndex={-1} autoComplete="off" aria-hidden="true" style={{ display: 'none' }} />
             </div>
-            <button className="submit" type="submit">Begin With Intention</button>
+            <button className="submit" type="submit" disabled={formStatus === 'sending'}>
+              {formStatus === 'sending' ? 'Sending...' : 'Begin With Intention'}
+            </button>
+            {formStatus === 'success' && <p className="form-status">Thank you. Your inquiry has been sent.</p>}
+            {formStatus === 'error' && <p className="form-status">Something went wrong. Please try again.</p>}
           </form>
         </div>
       </section>
