@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import Hummingbird from '../components/Hummingbird/Hummingbird';
-import botanicalDesktop from '../assets/botanical/botanical-frame-desktop-v2.webp';
-import botanicalMobile from '../assets/botanical/botanical-frame-mobile.webp';
+import botanicalDesktop from '../assets/botanical/botanical-frame-desktop.svg';
+import botanicalMobile from '../assets/botanical/botanical-frame-desktop.svg';
 
 const styles = `
   :root{
