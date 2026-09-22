@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import Hummingbird from '../components/Hummingbird/Hummingbird';
 import botanicalDesktop from '../assets/botanical/botanical-frame-desktop.svg';
-import botanicalMobile from '../assets/botanical/botanical-frame-desktop.svg';
+import botanicalMobile from '../assets/botanical/botanical-frame-mobile.webp';
 
 const styles = `
   :root{
@@ -346,7 +346,7 @@ const styles = `
     }
     .botanical-decoration img.botanical-desktop{
       filter:none;
-      transform:scale(1.09);
+      transform:scale(0.975);
       transform-origin:center;
     }
     .visual-card{
