@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import Hummingbird from '../components/Hummingbird/Hummingbird';
 import botanicalDesktop from '../assets/botanical/botanical-frame-desktop.svg';
 import botanicalMobile from '../assets/botanical/botanical-frame-desktop.svg';
@@ -12,6 +12,7 @@ const styles = `
     --muted:#6d685f;
     --soft:#d9cfbf;
     --white:#f8f4ec;
+    --menu-control-size:44px;
   }
   *{box-sizing:border-box}
   html{scroll-behavior:smooth}
@@ -308,13 +309,16 @@ const styles = `
     }
   }
   @media (max-width: 960px){
-    .nav-links{display:none}
     .markets-head,.cta-grid{grid-template-columns:1fr}
     .motif-stage{width:min(500px,80%)}
     .grid4,.process-grid{grid-template-columns:repeat(2,1fr)}
     .market-grid{grid-template-columns:1fr}
     .philosophy-grid{grid-template-columns:1fr}
     .hummingbird-section{grid-template-columns:1fr}
+  }
+  /* mobile-nav breakpoint: BEGIN hidden once it gets visually close to the centered brand — independent of the nav-collapse breakpoint above; only hides BEGIN, does not affect hamburger/menu behavior */
+  @media (max-width: 500px){
+    .nav .pill{display:none}
   }
   @media (max-width: 640px){
     .wrap{padding:0 20px}
@@ -363,7 +367,7 @@ const styles = `
 
   .menu-button{
     display:none;
-    width:44px;height:44px;
+    width:var(--menu-control-size);height:var(--menu-control-size);
     border:1px solid var(--ink);
     border-radius:50%;
     background:transparent;
@@ -384,9 +388,35 @@ const styles = `
   .menu-button span{transform:translateY(0)}
   .menu-button:before{transform:translateY(-5px)}
   .menu-button:after{transform:translateY(5px)}
+  .menu-button.open{opacity:0}
   .menu-button.open span{opacity:0}
   .menu-button.open:before{transform:rotate(45deg)}
   .menu-button.open:after{transform:rotate(-45deg)}
+
+  /* escapes .nav's stacking context (sticky + z-index) so it can render above .menu-overlay; top/left are set inline in JS from the hamburger's own measured rect so the two controls always share one exact position */
+  .menu-close{
+    display:none;
+    width:var(--menu-control-size);height:var(--menu-control-size);
+    border:1px solid var(--paper);
+    border-radius:50%;
+    background:transparent;
+    align-items:center;justify-content:center;
+    cursor:pointer;
+    position:fixed;
+    top:0;
+    left:0;
+    z-index:110;
+    color:var(--paper);
+  }
+  .menu-close:before,
+  .menu-close:after{
+    content:"";
+    position:absolute;
+    width:18px;height:1px;
+    background:currentColor;
+  }
+  .menu-close:before{transform:rotate(45deg)}
+  .menu-close:after{transform:rotate(-45deg)}
 
   .menu-overlay{
     position:fixed;
@@ -397,16 +427,19 @@ const styles = `
     opacity:0;
     pointer-events:none;
     transition:opacity .28s ease;
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
   }
   .menu-overlay.open{
     opacity:1;
     pointer-events:auto;
   }
   .menu-overlay-inner{
-    min-height:100%;
+    min-height:100vh;
+    min-height:100dvh;
     max-width:1280px;
     margin:0 auto;
-    padding:110px 28px 40px;
+    padding:calc(110px + env(safe-area-inset-top)) 28px calc(64px + env(safe-area-inset-bottom));
     display:grid;
     grid-template-columns:1fr .7fr;
     gap:70px;
@@ -450,13 +483,15 @@ const styles = `
     letter-spacing:.2em;
     color:#a9a39a;
   }
-  @media (max-width: 960px){
+  /* nav-collapse breakpoint: measured where the centered brand starts overlapping the text nav (~1023px), plus a safety margin — kept separate from the generic 960px tablet/layout breakpoints above */
+  @media (max-width: 1080px){
+    .nav-links{display:none}
     .menu-button{display:flex}
-    .nav .pill{display:none}
+    .menu-close{display:flex}
     .menu-overlay-inner{
       grid-template-columns:1fr;
       align-items:start;
-      padding-top:100px;
+      padding-top:calc(100px + env(safe-area-inset-top));
     }
     .menu-meta{
       border-left:none;
@@ -468,17 +503,80 @@ const styles = `
 
 `;
 
+// keep in sync with the "@media (max-width: 1080px)" nav-collapse breakpoint used throughout `styles` above
+const COMPACT_NAV_QUERY = '(max-width: 1080px)';
+
 export default function App() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [formStatus, setFormStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
+  // true when the menu is being closed by an anchor click, so the anchor's own hash-scroll wins instead of restoring the pre-open scroll position
+  const navigatingRef = useRef(false);
+  // measured from #menuButton so .menu-close always sits in the exact same rect, regardless of breakpoint/safe-area
+  const [closeButtonRect, setCloseButtonRect] = useState({ top: 0, left: 0 });
+
+  // if the window is resized back into desktop-nav mode while the overlay is open, close it so the overlay/lock/close-button never get stranded behind hidden mobile-only controls
+  useEffect(() => {
+    const mql = window.matchMedia(COMPACT_NAV_QUERY);
+    const handleChange = (e: MediaQueryListEvent) => {
+      if (!e.matches) setIsMenuOpen(false);
+    };
+    mql.addEventListener('change', handleChange);
+    return () => mql.removeEventListener('change', handleChange);
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!isMenuOpen) return;
+
+    const syncCloseButtonPosition = () => {
+      const rect = document.getElementById('menuButton')?.getBoundingClientRect();
+      if (rect) setCloseButtonRect({ top: rect.top, left: rect.left });
+    };
+
+    syncCloseButtonPosition();
+    window.addEventListener('resize', syncCloseButtonPosition);
+    return () => window.removeEventListener('resize', syncCloseButtonPosition);
+  }, [isMenuOpen]);
 
   useEffect(() => {
-    document.body.style.overflow = isMenuOpen ? 'hidden' : '';
+    if (!isMenuOpen) return;
+
+    const scrollY = window.scrollY;
+    const body = document.body;
+    const priorStyle = {
+      position: body.style.position,
+      top: body.style.top,
+      left: body.style.left,
+      right: body.style.right,
+      width: body.style.width,
+      overflow: body.style.overflow,
+    };
+
+    body.style.position = 'fixed';
+    body.style.top = `-${scrollY}px`;
+    body.style.left = '0';
+    body.style.right = '0';
+    body.style.width = '100%';
+    body.style.overflow = 'hidden';
 
     return () => {
-      document.body.style.overflow = '';
+      body.style.position = priorStyle.position;
+      body.style.top = priorStyle.top;
+      body.style.left = priorStyle.left;
+      body.style.right = priorStyle.right;
+      body.style.width = priorStyle.width;
+      body.style.overflow = priorStyle.overflow;
+
+      if (!navigatingRef.current) {
+        window.scrollTo(0, scrollY);
+      }
+      navigatingRef.current = false;
     };
   }, [isMenuOpen]);
+
+  const closeMenuForNavigation = () => {
+    navigatingRef.current = true;
+    setIsMenuOpen(false);
+  };
 
   return (
     <>
@@ -496,29 +594,41 @@ export default function App() {
             <a href="#markets">Markets</a>
             <a href="#philosophy">Philosophy</a>
           </div>
-          <a className="pill" href="#begin">Begin</a>
           <button
             type="button"
             className={`menu-button ${isMenuOpen ? 'open' : ''}`}
             id="menuButton"
             aria-label="Open navigation"
             aria-expanded={isMenuOpen}
+            aria-hidden={isMenuOpen}
+            tabIndex={isMenuOpen ? -1 : 0}
             onClick={() => setIsMenuOpen((value) => !value)}
           >
             <span />
           </button>
+          <a className="pill" href="#begin">Begin</a>
         </div>
       </nav>
+
+      {isMenuOpen && (
+        <button
+          type="button"
+          className="menu-close"
+          aria-label="Close navigation"
+          style={{ top: closeButtonRect.top, left: closeButtonRect.left }}
+          onClick={() => setIsMenuOpen(false)}
+        />
+      )}
 
       <div className={`menu-overlay ${isMenuOpen ? 'open' : ''}`} aria-hidden={!isMenuOpen}>
         <div className="menu-overlay-inner">
           <nav className="menu-nav" aria-label="Section navigation">
-            <a href="#home" onClick={() => setIsMenuOpen(false)}>Home</a>
-            <a href="#studio" onClick={() => setIsMenuOpen(false)}>Studio</a>
-            <a href="#strategy" onClick={() => setIsMenuOpen(false)}>Strategy</a>
-            <a href="#markets" onClick={() => setIsMenuOpen(false)}>Markets</a>
-            <a href="#philosophy" onClick={() => setIsMenuOpen(false)}>Philosophy</a>
-            <a href="#begin" onClick={() => setIsMenuOpen(false)}>Begin</a>
+            <a href="#home" onClick={closeMenuForNavigation}>Home</a>
+            <a href="#studio" onClick={closeMenuForNavigation}>Studio</a>
+            <a href="#strategy" onClick={closeMenuForNavigation}>Strategy</a>
+            <a href="#markets" onClick={closeMenuForNavigation}>Markets</a>
+            <a href="#philosophy" onClick={closeMenuForNavigation}>Philosophy</a>
+            <a href="#begin" onClick={closeMenuForNavigation}>Begin</a>
           </nav>
           <div className="menu-meta">
             <div className="eyebrow">Joint Ambition</div>
