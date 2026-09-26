@@ -28,6 +28,13 @@ const styles = `
     font-weight:400;
     margin:0;
   }
+  .tm-mark{
+    font-size:0.4em;
+    font-weight:400;
+    vertical-align:super;
+    line-height:0;
+    margin-left:0.1em;
+  }
   p{margin:0}
   a{text-decoration:none;color:inherit}
   .wrap{max-width:1280px;margin:0 auto;padding:0 28px}
@@ -1059,14 +1066,14 @@ export default function App() {
             </div>
             <div className="philosophy-card">
               <div className="num">03</div>
-              <h3>Precision is a decision.</h3>
+              <h3>Precision is a decision.<sup className="tm-mark">™</sup></h3>
               <p>
                 Precision is not an accident. It is a choice made through restraint, structure, spacing, language, and detail. At Joint Ambition, refinement is not excess. It is discipline.
               </p>
             </div>
             <div className="philosophy-card">
               <div className="num">04</div>
-              <h3>Where vision parallels reality.</h3>
+              <h3>Where vision parallels reality.<sup className="tm-mark">™</sup></h3>
               <p>
                 Many founders can see the business clearly before the outside world can see it the same way. This is where we work — translating ambition into identity, strategy into visuals, and intention into a brand presence others can understand and believe in.
               </p>
@@ -1235,7 +1242,7 @@ export default function App() {
       <footer ref={footerRef}>
         <div className="wrap footer-inner">
           <div>&copy; 2026 Joint Ambition LLC</div>
-          <div>Where vision parallels reality.</div>
+          <div>Where vision parallels reality.<sup className="tm-mark">™</sup></div>
         </div>
         <nav className="wrap footer-legal" aria-label="Legal">
           <Link to="/privacy">Privacy</Link>
