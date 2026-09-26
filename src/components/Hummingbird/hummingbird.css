@@ -25,11 +25,6 @@
   border-color: rgba(238, 231, 218, 0.38);
 }
 
-.ja-hummingbird:focus-visible {
-  outline: 2px solid currentColor;
-  outline-offset: 6px;
-}
-
 .ja-hummingbird > .ja-hummingbird__svg {
   display: block;
   width: 100%;

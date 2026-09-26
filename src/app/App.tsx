@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { Link } from 'react-router';
 import Hummingbird from '../components/Hummingbird/Hummingbird';
 import botanicalDesktop from '../assets/botanical/botanical-frame-desktop.svg';
 import botanicalMobile from '../assets/botanical/botanical-frame-desktop.svg';
@@ -55,6 +56,7 @@ const styles = `
   .brand img{width:39px;height:39px;object-fit:contain;flex:none}
   .nav-links{display:flex;gap:28px;font-size:11px;text-transform:uppercase;letter-spacing:.22em;color:var(--muted)}
   .nav-links a:hover{color:var(--ink)}
+  .nav-links a:focus-visible{color:var(--ink);outline:2px solid var(--ink);outline-offset:4px}
   .pill{
     border:1px solid var(--ink);
     border-radius:999px;padding:11px 18px;
@@ -131,16 +133,19 @@ const styles = `
     background:var(--ink);
     color:var(--paper);
     padding:38px;
-    display:flex;flex-direction:column;justify-content:flex-end;
+    display:flex;flex-direction:column;
     box-shadow:0 30px 70px rgba(0,0,0,.16);
   }
+  /* motif participates in the card's own flex flow (was position:absolute, independent of the text block below it, which is how the ring and "Signature Motif" could collide when the heading wrapped to 2 lines); margin-top keeps the original top offset, margin-bottom is a guaranteed minimum gap (covers the ring's scale-transform overflow) that the card's min-height can grow to satisfy instead of ever compressing */
   .hummingbird-mark{
-    position:absolute;top:90px;left:50%;
+    flex:0 0 auto;
+    align-self:center;
+    margin:52px 0 56px;
     width:170px;height:170px;
     border:1px solid rgba(255,255,255,.35);
     border-radius:50%;
     display:grid;place-items:center;
-    transform:translateX(-50%) scale(1.375);
+    transform:scale(1.375);
     transform-origin:center;
   }
   .hummingbird-mark .ja-hummingbird{
@@ -173,7 +178,9 @@ const styles = `
   .bird .beak{
     position:absolute;left:60px;top:32px;width:52px;height:1px;background:#f4efe7;transform:rotate(-12deg);transform-origin:left center
   }
-  .visual-card h3{font-size:44px;line-height:1.05;margin-top:16px}
+  /* pushes the copy block (eyebrow + heading + paragraph) toward the bottom of the card when extra vertical space is available, matching the original bottom-anchored composition, while the fixed margins above still guarantee a minimum motif/copy gap */
+  .visual-card > .eyebrow{margin-top:auto}
+  .visual-card h2{font-size:44px;line-height:1.05;margin-top:16px}
   .visual-card p{margin-top:16px;color:#c8c1b7;line-height:1.7;font-size:14px}
   .section{padding:110px 0}
   .section.alt{background:var(--paper2)}
@@ -242,16 +249,25 @@ const styles = `
     background:var(--paper2);
   }
   .cta-grid{display:grid;grid-template-columns:.9fr 1.1fr;gap:70px}
-  form{border:1px solid var(--line);border-radius:30px;background:var(--paper);padding:30px}
+  form{--field-line:#8a8070;border:1px solid var(--line);border-radius:30px;background:var(--paper);padding:30px}
   .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
   label{font-size:10px;text-transform:uppercase;letter-spacing:.2em;color:var(--muted)}
+  .form-required-note{margin:0 0 16px;font-size:11px;line-height:1.6;color:var(--muted);text-transform:none;letter-spacing:0}
+  .required-mark{color:var(--muted)}
+  .field-hint{display:block;margin-top:6px;font-size:11px;line-height:1.5;color:var(--muted);text-transform:none;letter-spacing:0}
+  .field-error{display:block;margin-top:6px;font-size:11px;line-height:1.5;color:#8c3a2b;text-transform:none;letter-spacing:0}
+  input[aria-invalid="true"],textarea[aria-invalid="true"],.select-wrap select[aria-invalid="true"]{border-color:#8c3a2b}
+  input[aria-invalid="true"]:focus-visible,textarea[aria-invalid="true"]:focus-visible,.select-wrap select[aria-invalid="true"]:focus-visible{
+    border-color:#8c3a2b;
+    box-shadow:0 0 0 2px rgba(140,58,43,.18);
+  }
   .select-wrap{position:relative;display:block;width:100%;margin-top:8px}
   .select-wrap select{
     width:100%;
     appearance:none;
     -webkit-appearance:none;
     -moz-appearance:none;
-    border:1px solid var(--line);
+    border:1px solid var(--field-line);
     border-radius:14px;
     background:var(--paper2);
     color:var(--ink);
@@ -285,8 +301,15 @@ const styles = `
     pointer-events:none;
   }
   input,textarea{
-    width:100%;margin-top:8px;border:1px solid var(--line);border-radius:14px;
+    width:100%;margin-top:8px;border:1px solid var(--field-line);border-radius:14px;
     background:var(--paper2);padding:14px;font:inherit;color:var(--ink);outline:none;
+    transition:border-color .2s ease, box-shadow .2s ease, background-color .2s ease;
+  }
+  input:focus-visible,textarea:focus-visible{
+    border-color:var(--ink);
+    background:var(--paper);
+    box-shadow:0 0 0 2px rgba(23,23,20,.14);
+    outline:none;
   }
   textarea{min-height:130px;resize:vertical}
   .full{grid-column:1/-1}
@@ -295,10 +318,22 @@ const styles = `
     padding:15px 20px;text-transform:uppercase;letter-spacing:.2em;font-size:11px;cursor:pointer;
   }
   .form-status{margin-top:14px;font-size:13px;line-height:1.6;color:#5d574f}
+  .form-privacy-note{margin-top:14px;font-size:12px;line-height:1.6;color:var(--muted)}
+  .form-privacy-note a{text-decoration:underline;text-underline-offset:2px}
+  .form-privacy-note a:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
   footer{
     border-top:1px solid var(--line);padding:34px 0 46px;color:var(--muted);font-size:12px;
   }
   .footer-inner{display:flex;justify-content:space-between;gap:24px}
+  .footer-legal{
+    margin-top:18px;
+    display:flex;flex-wrap:wrap;
+    gap:10px 18px;
+    font-size:11px;text-transform:uppercase;letter-spacing:.18em;
+  }
+  .footer-legal a{color:var(--muted)}
+  .footer-legal a:hover{color:var(--ink)}
+  .footer-legal a:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
   @media (max-width: 1200px){
     .hero,.split{grid-template-columns:1fr}
     .hero-visual{
@@ -360,8 +395,8 @@ const styles = `
       border-radius:30px;
     }
     .hummingbird-mark{
-      top:18px;
-      transform:translateX(-50%) scale(1.08);
+      margin:-12px 0 24px;
+      transform:scale(1.08);
     }
   }
 
@@ -461,6 +496,14 @@ const styles = `
     transform:translateX(10px);
     opacity:.72;
   }
+  .menu-nav a:focus-visible{
+    transform:translateX(10px);
+    opacity:.72;
+    outline:2px solid currentColor;
+    outline-offset:6px;
+  }
+  /* sections are tabindex=-1 fragment-navigation focus targets only, never normal tab stops, so they get no visible ring */
+  section[tabindex="-1"]:focus{outline:none}
   .menu-meta{
     border-left:1px solid #4a4741;
     padding-left:34px;
@@ -506,13 +549,78 @@ const styles = `
 // keep in sync with the "@media (max-width: 1080px)" nav-collapse breakpoint used throughout `styles` above
 const COMPACT_NAV_QUERY = '(max-width: 1080px)';
 
+// focusable-element selector used to build the mobile-menu's focus-trap group
+const MENU_FOCUSABLE_SELECTOR = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+type InquiryField = 'name' | 'email' | 'message' | 'timeline' | 'investment';
+
+// custom, on-brand copy for each required field's native constraint-validation failure
+const INQUIRY_FIELD_ERROR_MESSAGES: Record<InquiryField, (validity: ValidityState) => string> = {
+  name: () => 'Please enter your name.',
+  email: (validity) => (validity.typeMismatch ? 'Please enter a valid email address.' : 'Please enter your email address.'),
+  message: () => 'Please tell us about your project.',
+  timeline: () => 'Please select a desired timeline.',
+  investment: () => 'Please select an estimated investment range.',
+};
+
 export default function App() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [formStatus, setFormStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<InquiryField, string>>>({});
+
+  // hooks into native constraint validation (required/type=email) instead of replacing it: the browser
+  // still blocks submission and focuses the first invalid field on its own; this only swaps the native
+  // validation bubble for an on-brand inline message associated via aria-describedby
+  const handleFieldInvalid = (field: InquiryField) => (
+    event: React.InvalidEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
+    event.preventDefault();
+    // canceling the native "invalid" event (to show our own message instead of the browser's bubble)
+    // also opts out of the browser's own auto-focus-first-invalid-field behavior, so it's re-implemented
+    // here: :invalid matches every currently-invalid control, in tree order, so the first match during
+    // this validation pass is the same field the browser would otherwise have focused
+    const field_ = event.currentTarget;
+    const isFirstInvalid = field_ === field_.form?.querySelector(':invalid');
+    // read the synthetic event's fields before setFieldErrors runs; React may invoke the state updater
+    // again later (e.g. Strict Mode's dev-only double-invoke), by which point event.currentTarget is null
+    const message = INQUIRY_FIELD_ERROR_MESSAGES[field](field_.validity);
+    setFieldErrors((prev) => ({ ...prev, [field]: message }));
+    if (isFirstInvalid) field_.focus();
+  };
+
+  const clearFieldError = (field: InquiryField) => (
+    event: React.SyntheticEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
+    if (!event.currentTarget.validity.valid) return;
+    setFieldErrors((prev) => {
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  };
+
   // true when the menu is being closed by an anchor click, so the anchor's own hash-scroll wins instead of restoring the pre-open scroll position
   const navigatingRef = useRef(false);
   // measured from #menuButton so .menu-close always sits in the exact same rect, regardless of breakpoint/safe-area
   const [closeButtonRect, setCloseButtonRect] = useState({ top: 0, left: 0 });
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const menuCloseRef = useRef<HTMLButtonElement>(null);
+  const menuOverlayRef = useRef<HTMLDivElement>(null);
+  const navRef = useRef<HTMLElement>(null);
+  const mainRef = useRef<HTMLElement>(null);
+  const footerRef = useRef<HTMLElement>(null);
+
+  // the close button renders outside .menu-overlay in the DOM (it escapes .nav's stacking context) but is
+  // logically the overlay's first focus stop, so the trap/tab-order group is assembled from both
+  const getMenuFocusable = () => {
+    const nodes: HTMLElement[] = [];
+    if (menuCloseRef.current) nodes.push(menuCloseRef.current);
+    if (menuOverlayRef.current) {
+      nodes.push(...Array.from(menuOverlayRef.current.querySelectorAll<HTMLElement>(MENU_FOCUSABLE_SELECTOR)));
+    }
+    return nodes;
+  };
 
   // if the window is resized back into desktop-nav mode while the overlay is open, close it so the overlay/lock/close-button never get stranded behind hidden mobile-only controls
   useEffect(() => {
@@ -566,11 +674,90 @@ export default function App() {
       body.style.width = priorStyle.width;
       body.style.overflow = priorStyle.overflow;
 
-      if (!navigatingRef.current) {
+      // if a section link caused this close, don't restore scroll (the anchor's own scroll wins) and
+      // don't pull focus back to the trigger either — the hashchange-driven section focus below owns it
+      const wasNavigating = navigatingRef.current;
+      if (!wasNavigating) {
         window.scrollTo(0, scrollY);
       }
       navigatingRef.current = false;
+
+      if (!wasNavigating) {
+        // return focus to the trigger on every non-navigation close path; the closing button is about to
+        // become unreachable (opacity/pointer-events hidden, or unmounted), so focus can't be left on it
+        menuButtonRef.current?.focus({ preventScroll: true });
+      }
     };
+  }, [isMenuOpen]);
+
+  // after any same-page anchor navigation (desktop nav, mobile menu, hero/CTA links, etc.) moves
+  // keyboard/AT focus to the destination section instead of the browser's fallback of document.body,
+  // since none of the sections were otherwise focusable; preventScroll avoids fighting the scroll that
+  // already happened as part of the native anchor navigation
+  useEffect(() => {
+    const handleHashChange = () => {
+      const id = window.location.hash.slice(1);
+      if (!id) return;
+      document.getElementById(id)?.focus({ preventScroll: true });
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
+  // moves focus into the overlay once it opens; the close button is the natural first stop since it
+  // renders at the same position the trigger was just activated from
+  useEffect(() => {
+    if (!isMenuOpen) return;
+    menuCloseRef.current?.focus();
+  }, [isMenuOpen]);
+
+  // React 18 doesn't support 'inert' as a JSX attribute, so it's set imperatively here; removes the
+  // background (nav/main/footer) from tab order, click handling, and the accessibility tree while the
+  // overlay is open, since the overlay/close-button live outside these containers and stay unaffected.
+  // Uses useLayoutEffect (not useEffect) so inert is always cleared before the scroll-lock effect's
+  // cleanup below tries to focus the trigger — focusing an element inside an inert subtree silently fails.
+  useLayoutEffect(() => {
+    const targets = [navRef.current, mainRef.current, footerRef.current];
+    for (const el of targets) {
+      if (el) el.inert = isMenuOpen;
+    }
+    return () => {
+      for (const el of targets) {
+        if (el) el.inert = false;
+      }
+    };
+  }, [isMenuOpen]);
+
+  // Escape-to-close and a Tab/Shift+Tab focus trap scoped to the close button + overlay nav links
+  useEffect(() => {
+    if (!isMenuOpen) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsMenuOpen(false);
+        return;
+      }
+      if (event.key !== 'Tab') return;
+
+      const focusable = getMenuFocusable();
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const active = document.activeElement;
+
+      if (event.shiftKey) {
+        if (active === first || !focusable.includes(active as HTMLElement)) {
+          event.preventDefault();
+          last.focus();
+        }
+      } else if (active === last || !focusable.includes(active as HTMLElement)) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isMenuOpen]);
 
   const closeMenuForNavigation = () => {
@@ -582,7 +769,7 @@ export default function App() {
     <>
       <style>{styles}</style>
 
-      <nav className="nav">
+      <nav className="nav" ref={navRef}>
         <div className="nav-inner">
           <a className="brand" href="#home">
             <img src="/favicon.svg" alt="" aria-hidden="true" />
@@ -596,10 +783,12 @@ export default function App() {
           </div>
           <button
             type="button"
+            ref={menuButtonRef}
             className={`menu-button ${isMenuOpen ? 'open' : ''}`}
             id="menuButton"
             aria-label="Open navigation"
             aria-expanded={isMenuOpen}
+            aria-controls="mobileMenuOverlay"
             aria-hidden={isMenuOpen}
             tabIndex={isMenuOpen ? -1 : 0}
             onClick={() => setIsMenuOpen((value) => !value)}
@@ -613,6 +802,7 @@ export default function App() {
       {isMenuOpen && (
         <button
           type="button"
+          ref={menuCloseRef}
           className="menu-close"
           aria-label="Close navigation"
           style={{ top: closeButtonRect.top, left: closeButtonRect.left }}
@@ -620,7 +810,15 @@ export default function App() {
         />
       )}
 
-      <div className={`menu-overlay ${isMenuOpen ? 'open' : ''}`} aria-hidden={!isMenuOpen}>
+      <div
+        id="mobileMenuOverlay"
+        ref={menuOverlayRef}
+        className={`menu-overlay ${isMenuOpen ? 'open' : ''}`}
+        role="dialog"
+        aria-modal={isMenuOpen ? 'true' : undefined}
+        aria-label="Main menu"
+        aria-hidden={!isMenuOpen}
+      >
         <div className="menu-overlay-inner">
           <nav className="menu-nav" aria-label="Section navigation">
             <a href="#home" onClick={closeMenuForNavigation}>Home</a>
@@ -643,8 +841,8 @@ export default function App() {
         </div>
       </div>
 
-      <main>
-      <section id="home" className="hero">
+      <main ref={mainRef}>
+      <section id="home" className="hero" tabIndex={-1}>
         <div className="hero-copy">
           <div className="eyebrow">Brand Strategy & Identity Studio</div>
           <h1>Where vision parallels reality.</h1>
@@ -670,7 +868,7 @@ export default function App() {
                   <Hummingbird size="100%" ring={false} color="#eee7da" strokeWidth={5.5} className="signature-motif-icon" label="Joint Ambition hummingbird" />
               </div>
               <div className="eyebrow" style={{ color: '#bdb6ad' }}>Signature Motif</div>
-              <h3>Precision in motion.</h3>
+              <h2>Precision in motion.</h2>
               <p>
                 The hummingbird represents controlled energy — detailed, agile, exacting, and impossible to ignore in presence.
               </p>
@@ -679,7 +877,7 @@ export default function App() {
         </div>
       </section>
 
-      <section id="studio" className="section alt">
+      <section id="studio" className="section alt" tabIndex={-1}>
         <div className="wrap split">
           <div>
             <div className="eyebrow">Studio</div>
@@ -705,7 +903,7 @@ export default function App() {
         </div>
       </section>
 
-      <section id="strategy" className="section">
+      <section id="strategy" className="section" tabIndex={-1}>
         <div className="wrap">
           <div className="split">
             <div>
@@ -772,7 +970,7 @@ export default function App() {
         </div>
       </section>
 
-      <section id="markets" className="section alt">
+      <section id="markets" className="section alt" tabIndex={-1}>
         <div className="wrap">
           <div className="markets-head">
             <div>
@@ -829,7 +1027,7 @@ export default function App() {
         </div>
       </section>
 
-      <section id="philosophy" className="section dark">
+      <section id="philosophy" className="section dark" tabIndex={-1}>
         <div className="wrap">
           <div style={{ maxWidth: 980 }}>
             <div className="eyebrow" style={{ color: '#8f8a82' }}>Philosophy</div>
@@ -887,7 +1085,7 @@ export default function App() {
         </div>
       </section>
 
-      <section id="begin" className="cta">
+      <section id="begin" className="cta" tabIndex={-1}>
         <div className="wrap cta-grid">
           <div>
             <div className="eyebrow">Begin</div>
@@ -900,7 +1098,6 @@ export default function App() {
           <form onSubmit={async (event) => {
             event.preventDefault();
             setFormStatus('sending');
-            console.log('[Inquiry] status: sending');
             const form = event.currentTarget;
             const formData = new FormData(form);
             try {
@@ -909,16 +1106,14 @@ export default function App() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(Object.fromEntries(formData.entries())),
               });
-              const result = await response.json().catch(() => null);
-              console.log('[Inquiry] response:', { status: response.status, ok: response.ok, result });
+              await response.json().catch(() => null);
 
               if (response.ok) {
                 form.reset();
+                setFieldErrors({});
                 setFormStatus('success');
-                console.log('[Inquiry] status: success');
               } else {
                 setFormStatus('error');
-                console.log('[Inquiry] status: error');
               }
             } catch (error) {
               setFormStatus('error');
@@ -926,14 +1121,63 @@ export default function App() {
             }
           }}>
             <div className="form-grid">
-              <label>Name<input name="name" type="text" placeholder="Your name" required /></label>
-              <label>Email<input name="email" type="email" placeholder="Your email" required /></label>
+              <p className="form-required-note full">Fields marked with an asterisk (*) are required.</p>
+              <label>
+                Name<span aria-hidden="true" className="required-mark"> *</span>
+                <input
+                  name="name"
+                  type="text"
+                  placeholder="Your name"
+                  required
+                  aria-invalid={fieldErrors.name ? 'true' : undefined}
+                  aria-describedby={fieldErrors.name ? 'name-error' : undefined}
+                  onInvalid={handleFieldInvalid('name')}
+                  onInput={clearFieldError('name')}
+                />
+                {fieldErrors.name && <span id="name-error" className="field-error">{fieldErrors.name}</span>}
+              </label>
+              <label>
+                Email<span aria-hidden="true" className="required-mark"> *</span>
+                <input
+                  name="email"
+                  type="email"
+                  placeholder="Your email"
+                  required
+                  aria-invalid={fieldErrors.email ? 'true' : undefined}
+                  aria-describedby={fieldErrors.email ? 'email-error' : undefined}
+                  onInvalid={handleFieldInvalid('email')}
+                  onInput={clearFieldError('email')}
+                />
+                {fieldErrors.email && <span id="email-error" className="field-error">{fieldErrors.email}</span>}
+              </label>
               <label>Business / Venture<input name="business" type="text" placeholder="Business name" /></label>
               <label className="full">Website or Instagram<input name="website" type="text" placeholder="URL or handle" /></label>
-              <label className="full">What are you building or refining?<textarea name="message" placeholder="Tell us about your business, the current challenge, and what you want to change." required /></label>
-              <label htmlFor="timeline">Desired Timeline
+              <label className="full">
+                What are you building or refining?<span aria-hidden="true" className="required-mark"> *</span>
+                <textarea
+                  name="message"
+                  placeholder="Tell us about your business, the current challenge, and what you want to change."
+                  required
+                  aria-invalid={fieldErrors.message ? 'true' : undefined}
+                  aria-describedby={['message-hint', fieldErrors.message ? 'message-error' : null].filter(Boolean).join(' ')}
+                  onInvalid={handleFieldInvalid('message')}
+                  onInput={clearFieldError('message')}
+                />
+                <span id="message-hint" className="field-hint">Tell us about your business, the current challenge, and what you want to change.</span>
+                {fieldErrors.message && <span id="message-error" className="field-error">{fieldErrors.message}</span>}
+              </label>
+              <label htmlFor="timeline">Desired Timeline<span aria-hidden="true" className="required-mark"> *</span>
                 <span className="select-wrap">
-                  <select id="timeline" name="timeline" defaultValue="" required>
+                  <select
+                    id="timeline"
+                    name="timeline"
+                    defaultValue=""
+                    required
+                    aria-invalid={fieldErrors.timeline ? 'true' : undefined}
+                    aria-describedby={fieldErrors.timeline ? 'timeline-error' : undefined}
+                    onInvalid={handleFieldInvalid('timeline')}
+                    onChange={clearFieldError('timeline')}
+                  >
                     <option value="" disabled>Select a timeline</option>
                     <option value="4 weeks or less">4 weeks or less</option>
                     <option value="5–8 weeks">5–8 weeks</option>
@@ -943,10 +1187,20 @@ export default function App() {
                     <option value="Flexible / Not sure yet">Flexible / Not sure yet</option>
                   </select>
                 </span>
+                {fieldErrors.timeline && <span id="timeline-error" className="field-error">{fieldErrors.timeline}</span>}
               </label>
-              <label htmlFor="investment">Estimated Investment
+              <label htmlFor="investment">Estimated Investment<span aria-hidden="true" className="required-mark"> *</span>
                 <span className="select-wrap">
-                  <select id="investment" name="investment" defaultValue="" required>
+                  <select
+                    id="investment"
+                    name="investment"
+                    defaultValue=""
+                    required
+                    aria-invalid={fieldErrors.investment ? 'true' : undefined}
+                    aria-describedby={fieldErrors.investment ? 'investment-error' : undefined}
+                    onInvalid={handleFieldInvalid('investment')}
+                    onChange={clearFieldError('investment')}
+                  >
                     <option value="" disabled>Select an investment range</option>
                     <option value="Up to $5,000">Up to $5,000</option>
                     <option value="$5,000–$10,000">$5,000–$10,000</option>
@@ -957,24 +1211,38 @@ export default function App() {
                     <option value="Not sure yet">Not sure yet</option>
                   </select>
                 </span>
+                {fieldErrors.investment && <span id="investment-error" className="field-error">{fieldErrors.investment}</span>}
               </label>
               <input name="websiteUrl" type="text" tabIndex={-1} autoComplete="off" aria-hidden="true" style={{ display: 'none' }} />
             </div>
             <button className="submit" type="submit" disabled={formStatus === 'sending'}>
               {formStatus === 'sending' ? 'Sending...' : 'Begin With Intention'}
             </button>
-            {formStatus === 'success' && <p className="form-status">Thank you. Your inquiry has been sent.</p>}
-            {formStatus === 'error' && <p className="form-status">Something went wrong. Please try again.</p>}
+            <p className="form-privacy-note">
+              We&rsquo;ll use the information you provide to evaluate and respond to your inquiry. See our{' '}
+              <Link to="/privacy">Privacy Policy</Link> for more information.
+            </p>
+            <div role="status">
+              {formStatus === 'sending' && <p className="form-status">Sending your inquiry…</p>}
+              {formStatus === 'success' && <p className="form-status">Thank you. Your inquiry has been sent.</p>}
+              {formStatus === 'error' && <p className="form-status">Something went wrong. Please try again.</p>}
+            </div>
           </form>
         </div>
       </section>
 
       </main>
-      <footer>
+      <footer ref={footerRef}>
         <div className="wrap footer-inner">
-          <div>Joint Ambition LLC</div>
+          <div>&copy; 2026 Joint Ambition LLC</div>
           <div>Where vision parallels reality.</div>
         </div>
+        <nav className="wrap footer-legal" aria-label="Legal">
+          <Link to="/privacy">Privacy</Link>
+          <Link to="/terms">Terms</Link>
+          <Link to="/cookies">Cookies</Link>
+          <Link to="/accessibility">Accessibility</Link>
+        </nav>
       </footer>
     </>
   );

@@ -22,14 +22,13 @@ export default function Hummingbird({
   ring = true,
   className = '',
   style,
-  label = 'Animate Joint Ambition hummingbird',
 }: HummingbirdProps) {
-  const buttonRef = useRef<HTMLButtonElement>(null);
+  const hostRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const button = buttonRef.current;
-    if (!button) return;
-    const motion = attachHummingbirdMotion(button, { cyclesPerSecond });
+    const host = hostRef.current;
+    if (!host) return;
+    const motion = attachHummingbirdMotion(host, { cyclesPerSecond });
     return () => motion.destroy();
   }, [cyclesPerSecond]);
 
@@ -41,13 +40,12 @@ export default function Hummingbird({
   } as CSSProperties;
 
   return (
-    <button
-      ref={buttonRef}
-      type="button"
+    <div
+      ref={hostRef}
       className={`ja-hummingbird ${className}`.trim()}
       data-ring={ring ? 'true' : 'false'}
       style={iconStyle}
-      aria-label={label}
+      aria-hidden="true"
     >
       <svg className="ja-hummingbird__svg" xmlns="http://www.w3.org/2000/svg" viewBox="110 65 850 850" aria-hidden="true" focusable="false">
         <g data-ja-bird="">
@@ -59,6 +57,6 @@ export default function Hummingbird({
         </g>
         </g>
       </svg>
-    </button>
+    </div>
   );
 }
