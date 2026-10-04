@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
 import Hummingbird, { HummingbirdVector } from '../components/Hummingbird/Hummingbird';
+import FooterHomeLogo from './components/FooterHomeLogo';
 import botanicalDesktop from '../assets/botanical/botanical-frame-desktop.svg';
 import botanicalMobile from '../assets/botanical/botanical-frame-desktop.svg';
 
@@ -353,6 +354,7 @@ const styles = `
   .footer-tagline{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:300;line-height:1.15;color:#4d4841}
   .footer-tagline-ending{white-space:nowrap}
   .footer-tagline .tm-mark{white-space:nowrap}
+  .footer-center-logo{display:none}
   @media (max-width: 820px){
     .footer-inner{align-items:flex-start;flex-direction:column;gap:18px}
     .footer-divider{height:30px}
@@ -368,6 +370,21 @@ const styles = `
     .footer-emblem{width:44px;height:44px}
     .footer-divider{height:26px}
     .footer-tagline{font-size:18px}
+  }
+  @media (min-width: 820px){
+    .footer-inner{
+      display:grid;
+      grid-template-columns:minmax(0,1fr) 40px minmax(0,1fr);
+      column-gap:12px;
+    }
+    .footer-left{grid-column:1}
+    .footer-center-logo{
+      display:grid;grid-column:2;grid-row:1;place-items:center;
+      width:40px;height:40px;
+    }
+    .footer-center-logo img{display:block;width:100%;height:100%;object-fit:contain}
+    .footer-center-logo:focus-visible{outline:2px solid var(--ink);outline-offset:4px}
+    .footer-signature{grid-column:3;justify-self:end}
   }
   @media (max-width: 1200px){
     .hero,.split{grid-template-columns:1fr}
@@ -1281,6 +1298,7 @@ export default function App() {
               <Link to="/accessibility">Accessibility</Link>
             </nav>
           </div>
+          <FooterHomeLogo className="footer-center-logo" />
           <div className="footer-signature">
             <span className="footer-emblem" aria-hidden="true"><HummingbirdVector className="footer-emblem-vector" /></span>
             <span className="footer-divider" aria-hidden="true" />

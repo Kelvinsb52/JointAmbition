@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router';
+import FooterHomeLogo from '../components/FooterHomeLogo';
 
 // Scoped copy of the Joint Ambition design tokens/typography used in App.tsx, kept local so the
 // legal pages don't depend on App's inline <style> tag (which only renders when App itself mounts).
@@ -102,6 +103,15 @@ const legalStyles = `
   .legal-crosslinks a{text-decoration:none}
   .legal-crosslinks a:hover{color:var(--ink)}
   .legal-crosslinks a.is-active{color:var(--ink)}
+  .legal-footer{display:none}
+  .legal-footer-home{
+    display:grid;place-items:center;width:40px;height:40px;
+  }
+  .legal-footer-home img{display:block;width:100%;height:100%;object-fit:contain}
+  .legal-footer-home:focus-visible{outline:2px solid var(--ink);outline-offset:4px}
+  @media (min-width:820px){
+    .legal-footer{display:flex;justify-content:center;padding:0 28px 18px}
+  }
   @media (max-width: 640px){
     .legal-nav-inner{padding:16px 20px;flex-wrap:wrap;row-gap:8px}
     .legal-return-link{white-space:normal;text-align:right}
@@ -153,6 +163,9 @@ export default function LegalLayout({ eyebrow, title, lastUpdated, currentPath, 
           <Link to="/">Return to Joint Ambition</Link>
         </nav>
       </main>
+      <footer className="legal-footer">
+        <FooterHomeLogo className="legal-footer-home" />
+      </footer>
     </div>
   );
 }
