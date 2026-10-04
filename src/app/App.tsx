@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
-import Hummingbird from '../components/Hummingbird/Hummingbird';
+import Hummingbird, { HummingbirdVector } from '../components/Hummingbird/Hummingbird';
 import botanicalDesktop from '../assets/botanical/botanical-frame-desktop.svg';
 import botanicalMobile from '../assets/botanical/botanical-frame-desktop.svg';
 
@@ -330,18 +330,41 @@ const styles = `
   .form-privacy-note a{text-decoration:underline;text-underline-offset:2px}
   .form-privacy-note a:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
   footer{
-    border-top:1px solid var(--line);padding:34px 0 46px;color:var(--muted);font-size:12px;
+    border-top:1px solid var(--line);padding:12px 0 14px;color:var(--muted);font-size:12px;
   }
-  .footer-inner{display:flex;justify-content:space-between;gap:24px}
+  .footer-inner{display:flex;align-items:center;justify-content:space-between;gap:32px}
+  .footer-left{display:flex;flex-direction:column;align-items:flex-start;gap:14px}
+  .footer-copyright{font-size:13px;letter-spacing:.015em}
   .footer-legal{
-    margin-top:18px;
     display:flex;flex-wrap:wrap;
-    gap:10px 18px;
+    gap:8px 22px;
     font-size:11px;text-transform:uppercase;letter-spacing:.18em;
   }
   .footer-legal a{color:var(--muted)}
   .footer-legal a:hover{color:var(--ink)}
   .footer-legal a:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
+  .footer-signature{display:flex;align-items:center;gap:16px;min-width:0}
+  .footer-emblem{display:block;width:52px;height:52px;flex:none;color:var(--muted);pointer-events:none}
+  .footer-emblem svg{
+    display:block;width:100%;height:100%;overflow:visible;fill:none;stroke:currentColor;stroke-width:8;
+    stroke-linecap:round;stroke-linejoin:round;shape-rendering:geometricPrecision;pointer-events:none;
+  }
+  .footer-divider{width:1px;height:32px;flex:none;background:var(--line)}
+  .footer-tagline{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:300;line-height:1.15;color:#4d4841}
+  .footer-tagline-ending{white-space:nowrap}
+  .footer-tagline .tm-mark{white-space:nowrap}
+  @media (max-width: 820px){
+    .footer-inner{align-items:flex-start;flex-direction:column;gap:18px}
+    .footer-divider{height:30px}
+  }
+  @media (max-width: 819px){
+    .footer-tagline{font-size:20px}
+  }
+  @media (max-width: 767px){
+    .footer-emblem{width:44px;height:44px}
+    .footer-divider{height:26px}
+    .footer-tagline{font-size:18px}
+  }
   @media (max-width: 1200px){
     .hero,.split{grid-template-columns:1fr}
     .hero-visual{
@@ -373,8 +396,11 @@ const styles = `
     .split{gap:38px}
     .process-head{display:block}
     .process-head p{margin-top:16px}
-    .footer-inner{display:block}
-    .footer-inner div+div{margin-top:10px}
+    footer{padding:12px 0 14px}
+    .footer-inner{gap:18px}
+    .footer-left{gap:12px}
+    .footer-legal{gap:8px 18px}
+    .footer-signature{gap:12px}
     .hero-visual{
       min-height:680px;
       border-radius:30px;
@@ -1242,15 +1268,21 @@ export default function App() {
       </main>
       <footer ref={footerRef}>
         <div className="wrap footer-inner">
-          <div>&copy; 2026 Joint Ambition LLC</div>
-          <div>Where vision parallels reality.<sup className="tm-mark">™</sup></div>
+          <div className="footer-left">
+            <div className="footer-copyright">&copy; 2026 Joint Ambition LLC</div>
+            <nav className="footer-legal" aria-label="Legal">
+              <Link to="/privacy">Privacy</Link>
+              <Link to="/terms">Terms</Link>
+              <Link to="/cookies">Cookies</Link>
+              <Link to="/accessibility">Accessibility</Link>
+            </nav>
+          </div>
+          <div className="footer-signature">
+            <span className="footer-emblem" aria-hidden="true"><HummingbirdVector className="footer-emblem-vector" /></span>
+            <span className="footer-divider" aria-hidden="true" />
+            <div className="footer-tagline">Where vision parallels <span className="footer-tagline-ending">reality.<sup className="tm-mark">™</sup></span></div>
+          </div>
         </div>
-        <nav className="wrap footer-legal" aria-label="Legal">
-          <Link to="/privacy">Privacy</Link>
-          <Link to="/terms">Terms</Link>
-          <Link to="/cookies">Cookies</Link>
-          <Link to="/accessibility">Accessibility</Link>
-        </nav>
       </footer>
     </>
   );
