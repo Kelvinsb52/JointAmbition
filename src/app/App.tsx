@@ -361,6 +361,10 @@ const styles = `
     .footer-tagline{font-size:20px}
   }
   @media (max-width: 767px){
+    .footer-left{align-items:center;width:100%}
+    .footer-copyright{text-align:center}
+    .footer-legal{width:100%;justify-content:center}
+    .footer-signature{align-self:center;justify-content:center;max-width:100%}
     .footer-emblem{width:44px;height:44px}
     .footer-divider{height:26px}
     .footer-tagline{font-size:18px}
