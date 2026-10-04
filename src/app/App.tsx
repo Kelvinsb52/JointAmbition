@@ -29,9 +29,10 @@ const styles = `
     margin:0;
   }
   .tm-mark{
-    font-size:0.4em;
+    font-size:0.6em;
     font-weight:400;
     vertical-align:super;
+    top:0;
     line-height:0;
     margin-left:0.1em;
   }
