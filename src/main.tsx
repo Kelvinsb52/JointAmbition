@@ -1,5 +1,5 @@
 
-  import { useEffect } from "react";
+  import { lazy, Suspense, useEffect } from "react";
   import { createRoot } from "react-dom/client";
   import { BrowserRouter, Routes, Route, useLocation } from "react-router";
   import App from "./app/App.tsx";
@@ -9,6 +9,10 @@
   import AccessibilityPage from "./app/legal/AccessibilityPage.tsx";
   import "./styles/index.css";
   import "./components/Hummingbird/hummingbird.css";
+
+  const JAHeroEntrancePreview = import.meta.env.DEV
+    ? lazy(() => import("./components/brand/JAMark/JAHeroEntrancePreview"))
+    : null;
 
   function ScrollToTop() {
     const { pathname } = useLocation();
@@ -30,6 +34,13 @@
         <Route path="/terms" element={<TermsPage />} />
         <Route path="/cookies" element={<CookiesPage />} />
         <Route path="/accessibility" element={<AccessibilityPage />} />
+        {JAHeroEntrancePreview && (
+          <Route path="/dev/ja-entrance" element={
+            <Suspense fallback={<p>Loading the motion prototype...</p>}>
+              <JAHeroEntrancePreview />
+            </Suspense>
+          } />
+        )}
       </Routes>
     </BrowserRouter>
   );

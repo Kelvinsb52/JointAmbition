@@ -1,0 +1,177 @@
+.ja-entrance,
+.ja-entrance-preview {
+  --ja-red: #bf0000;
+  --ja-cream: var(--paper, #efe7d8);
+}
+
+.ja-entrance {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: clamp(300px, 62svh, 760px);
+  background: var(--ja-cream);
+  color: var(--ja-red);
+  isolation: isolate;
+}
+
+.ja-entrance__composition {
+  display: block;
+  width: min(100%, 1200px);
+  height: auto;
+  aspect-ratio: 5 / 3;
+  overflow: hidden;
+}
+
+.ja-entrance__lines path {
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+  stroke-linecap: butt;
+}
+
+.ja-entrance__construction path {
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+  stroke-linejoin: miter;
+}
+
+.ja-entrance__artwork [data-ja-source-id="pgl"] > path,
+.ja-entrance__artwork [data-ja-source-id="pgr"] > path {
+  fill: var(--ja-mark-outer, var(--ja-red));
+}
+
+.ja-entrance__artwork :is(
+  [data-ja-source-id="j1"], [data-ja-source-id="j2"],
+  [data-ja-source-id="j3"], [data-ja-source-id="j4"],
+  [data-ja-source-id="a1"], [data-ja-source-id="a2"]
+) > path {
+  fill: var(--ja-mark-inner, var(--ja-cream));
+}
+
+.ja-entrance--compare {
+  --ja-mark-outer: #000;
+  --ja-mark-inner: #fff;
+}
+
+.ja-entrance__reference {
+  opacity: .5;
+  pointer-events: none;
+}
+
+.ja-entrance-preview {
+  min-height: 100svh;
+  padding: 28px clamp(20px, 4vw, 64px) 48px;
+  background: var(--ja-cream);
+  color: #171714;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
+.ja-entrance-preview__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.ja-entrance-preview__eyebrow {
+  font-size: 11px;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+}
+
+.ja-entrance-preview h1 {
+  margin-top: 8px;
+  font-family: Georgia, serif;
+  font-size: clamp(24px, 3vw, 36px);
+  font-weight: 400;
+}
+
+.ja-entrance-preview a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.ja-entrance-preview__controls,
+.ja-entrance-preview__notes {
+  max-width: 900px;
+  margin: 0 auto;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.ja-entrance-preview__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.ja-entrance-preview button {
+  min-height: 44px;
+  padding: 8px 16px;
+  border: 1px solid currentColor;
+  border-radius: 24px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.ja-entrance-preview button:disabled {
+  opacity: .45;
+  cursor: default;
+}
+
+.ja-entrance-preview :is(button, input, a):focus-visible {
+  outline: 2px solid var(--ja-red);
+  outline-offset: 4px;
+}
+
+.ja-entrance-preview__scrubber,
+.ja-entrance-preview__comparison {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 18px 0;
+  font: inherit;
+}
+
+.ja-entrance-preview__scrubber input {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  accent-color: var(--ja-red);
+}
+
+.ja-entrance-preview__comparison input {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  accent-color: var(--ja-red);
+}
+
+.ja-entrance-preview output {
+  font-variant-numeric: tabular-nums;
+}
+
+.ja-entrance-preview__notes {
+  margin-top: 32px;
+}
+
+.ja-entrance-preview__notes h2 {
+  font: inherit;
+  font-weight: 600;
+}
+
+.ja-entrance-preview__notes ol {
+  list-style: decimal;
+  padding-left: 20px;
+  margin: 12px 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ja-entrance__lines,
+  .ja-entrance__construction { display: none; }
+  .ja-entrance__artwork g { mask: none !important; }
+}

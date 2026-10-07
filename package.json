@@ -6,7 +6,8 @@
   "scripts": {
     "build": "vite build",
     "dev": "vite",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "verify:ja-mark": "node --test src/components/brand/JAMark/canonical.test.mjs"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",
