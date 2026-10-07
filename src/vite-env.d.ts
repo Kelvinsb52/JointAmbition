@@ -12,3 +12,8 @@ declare module '*.css' {
   const stylesheet: Record<string, string>;
   export default stylesheet;
 }
+
+declare module '*.css?inline' {
+  const stylesheet: string;
+  export default stylesheet;
+}
