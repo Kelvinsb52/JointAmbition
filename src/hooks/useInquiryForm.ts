@@ -47,7 +47,6 @@ export function useInquiryForm() {
     });
   };
 
-
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setFormStatus('sending');

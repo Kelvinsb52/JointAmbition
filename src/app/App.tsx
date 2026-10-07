@@ -17,6 +17,7 @@ export default function App() {
 
   return (
     <>
+      {/* Keep these rules route-local and after the global styles in the cascade. */}
       <style>{homeStyles}</style>
       <Header
         navRef={navigation.navRef}

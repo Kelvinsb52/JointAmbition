@@ -84,7 +84,7 @@ export function useMobileNavigation() {
       body.style.overflow = priorStyle.overflow;
 
       // if a section link caused this close, don't restore scroll (the anchor's own scroll wins) and
-      // don't pull focus back to the trigger either — the hashchange-driven section focus below owns it
+      // don't pull focus back to the trigger either — useHashNavigationFocus owns section focus
       const wasNavigating = navigatingRef.current;
       if (!wasNavigating) {
         window.scrollTo(0, scrollY);
@@ -110,7 +110,7 @@ export function useMobileNavigation() {
   // background (nav/main/footer) from tab order, click handling, and the accessibility tree while the
   // overlay is open, since the overlay/close-button live outside these containers and stay unaffected.
   // Uses useLayoutEffect (not useEffect) so inert is always cleared before the scroll-lock effect's
-  // cleanup below tries to focus the trigger — focusing an element inside an inert subtree silently fails.
+  // cleanup tries to focus the trigger — focusing an element inside an inert subtree silently fails.
   useLayoutEffect(() => {
     const targets = [navRef.current, mainRef.current, footerRef.current];
     for (const el of targets) {
@@ -159,7 +159,6 @@ export function useMobileNavigation() {
     navigatingRef.current = true;
     setIsMenuOpen(false);
   };
-
 
   return {
     isMenuOpen, closeButtonRect,
