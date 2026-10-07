@@ -2,15 +2,17 @@ import { forwardRef, useId, useImperativeHandle, useLayoutEffect, useRef } from 
 import masterUrl from '../../../assets/brand/joint-ambition-mark.master.svg?url&no-inline';
 import { mountCanonicalArtwork } from './canonicalArtwork';
 import { createEntranceTimeline, type EntranceControls, type EntranceState } from './entranceTimeline';
+import type { EntranceFillMode } from './morphFill';
 import './ja-entrance.css';
 
 interface JAHeroEntranceProps {
   compareSource?: boolean;
   onUpdate?: (state: EntranceState) => void;
+  fillMode?: EntranceFillMode;
 }
 
 const JAHeroEntrance = forwardRef<EntranceControls, JAHeroEntranceProps>(function JAHeroEntrance(
-  { compareSource = false, onUpdate },
+  { compareSource = false, onUpdate, fillMode = 'current' },
   ref,
 ) {
   const prefix = `ja-${useId().replaceAll(':', '')}`;
@@ -29,14 +31,14 @@ const JAHeroEntrance = forwardRef<EntranceControls, JAHeroEntranceProps>(functio
     const artwork = mountCanonicalArtwork(host, prefix);
     const timeline = createEntranceTimeline(composition, artwork, masks, prefix, state => {
       onUpdateRef.current?.(state);
-    });
+    }, fillMode);
     timelineRef.current = timeline;
     return () => {
       timeline.destroy();
       timelineRef.current = null;
       host.replaceChildren();
     };
-  }, [prefix]);
+  }, [prefix, fillMode]);
 
   useImperativeHandle(ref, () => {
     function timeline() {

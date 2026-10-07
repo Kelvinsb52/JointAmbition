@@ -82,13 +82,18 @@ The [JAMark area](src/components/brand/JAMark) contains:
 - [entranceTimeline.ts](src/components/brand/JAMark/entranceTimeline.ts): shared playback
   clock, chasing guide windows, exact-path contour masks, perimeter saturation, and
   canonical J/A engraving. Native Web Animations drives guide/contour/engraving masks
-  and unified saturation thickness. No new dependency is needed.
+  and Current Fill's unified saturation thickness. It also supplies Morph Fill's clock.
+- [morphFill.ts](src/components/brand/JAMark/morphFill.ts): development-only GSAP /
+  MorphSVG V1 experiment with seven authored cream-core shapes per side. Paused GSAP
+  timelines follow the existing WAAPI clock, never the other way around.
+- [morphFillV2.ts](src/components/brand/JAMark/morphFillV2.ts): independently authored
+  four-sided perimeter fronts, edge-contact sealing, segmented rhythm, and V2-only timing constants.
 - [constructionGeometry.ts](src/components/brand/JAMark/constructionGeometry.ts): derives
   contact coordinates, contour distances, and the final saturation stroke width
   from the two master polygons. Never builds replacement logo geometry.
 - [JAHeroEntrancePreview.tsx](src/components/brand/JAMark/JAHeroEntrancePreview.tsx):
-  replay/pause, a keyboard-accessible scrubber, completed-state control, timing guide,
-  and same-position canonical-source overlay.
+  Current Fill / Morph V1 / Morph V2 pressed-button group, replay/pause, a keyboard-accessible
+  scrubber, completed-state control, timing guide, and same-position canonical-source overlay.
 - [ja-entrance.css](src/components/brand/JAMark/ja-entrance.css): scoped presentation
   and preview styles; JA red `#BF0000`, cream `var(--paper, #EFE7D8)`.
 - [canonical.test.mjs](src/components/brand/JAMark/canonical.test.mjs): byte-for-byte
@@ -102,7 +107,125 @@ Black outer forms and white interior shapes receive red/cream CSS presentation o
 only. The source-color comparison restores black/white externally and overlays the
 original asset at 50% opacity; mismatched geometry would produce doubled edges.
 
-### Stroke -> architecture -> saturation -> engraving
+### Current / Morph V1 / Morph V2 fill experiment
+
+**Current Fill** is the default and retains the existing WAAPI saturation, displacement,
+attractors, and torsion. **Morph V1** retains the first Morph Fill implementation unchanged.
+**Morph V2** adds a separate fill and earlier J/A coordination. Selecting a
+different mode clears the source overlay, destroys the previous timeline (including its
+GSAP tweens), and restarts the preview. Pause, replay, completed-mark, and bidirectional
+scrubbing work on all three modes. Nothing is added to the production homepage.
+
+#### Preserved Morph V1
+
+Morph V1 leaves the canonical red paths in place. A white luminance-mask field minus
+one black core exposes the cream background through each red form. Each core has seven
+authored states: full, approximately 80%, 60%, 40%, 20%, 8%, and zero remaining. These
+are visual stages, not measured area percentages. Four corresponding cubic spans retain
+their point correspondence (`shapeIndex: 0`, linear MorphSVG interpolation). The first
+shape covers the complete silhouette; the last collapses to a point and is hidden.
+The outer mask detaches at completion, leaving the exact original artwork.
+
+The sequence's normalized knots are 0, .18, .38, .58, .77, .91, 1, with one
+`sine.inOut` envelope over the whole collapse, not an easing restart at each shape.
+Both sides share this motion family, but the curves and closure positions are separately
+authored, not mirrored. The left pocket leans across a broad diagonal; the right holds
+a different shoulder before narrowing. Late pockets curve slightly off-axis into a
+restrained tangential closure. There is no rotation, rotational interpolation, noise,
+displacement, or multi-front simulation in Morph V1.
+
+Current Fill and Morph V1 timings remain unchanged:
+
+| Current entrance stage | Start (ms) | End (ms) |
+| --- | ---: | ---: |
+| Left fill (either mode) | 2176.8 | 3326.8 |
+| Right fill (either mode) | 2226.9 | 3346.9 |
+| J: j1 / j3 / j2 / j4 | 2680 / 2930 / 3310 / 3530 | 2980 / 3360 / 3580 / 3880 |
+| A: a2 / a1 | 2820 / 3280 | 3330 / 3770 |
+| Completed hold | 3880 | 4060 |
+
+The fill durations remain 1150ms / 1120ms, with a 50.1ms right-side start offset.
+
+#### Morph V2 full-perimeter edge-contact refinement
+
+V2 no longer animates a cream core or only two opposing side walls. Each canonical
+parallelogram has **four white coverage paths in one luminance mask**, advancing from
+the top, outer side, bottom, and inner side. Each edge has nine scheduled states with
+six broad cubic spans. Top/bottom guides follow the original diagonal source edges;
+their local advance depths vary across the width. All four fronts start together,
+but their independently authored shoulders, recesses, and travel distances lead and
+lag. Early side coverage is reduced to make top/bottom participation substantial.
+
+The cream is consumed from the entire enclosure: top/bottom fronts progressively
+close the ends while the side fronts approach along an extended, off-axis seam.
+Every local advance is monotonic in its inward direction; no path scales toward a
+center or rotates. Different parts of the boundary connect at different times,
+followed by a restrained seam knit. The final side paths overlap by at least six source units,
+eliminating an antialiased hairline before the mask detaches. This is geometric coverage,
+not a uniform inset, opacity fade, seam overlay, or simulated liquid collision.
+Canonical source paths clip the entire reveal; the central gap between the two
+parallelograms is never bridged. Current Fill and Morph V1 remain unchanged.
+
+Eight MorphSVG segments last **150 / 240 / 115 / 80 / 70 / 65 / 75 / 105ms** on the left.
+The first **585ms (65%)** preserve the preceding four-sided wetting exactly: the old
+505-725ms segment is split at its original eased position, with a restricted copy
+of that same easing. Later targets cannot pull the early/mid motion forward.
+Only the remaining 35% is reauthored: first contact, second contact, short-seam sealing,
+then hidden overlap settling. Positive entry/exit easing slopes avoid pauses at keys.
+The right uses the same rhythm scaled to 880ms. Both timelines remain paused and
+are sampled from the existing WAAPI clock.
+
+#### Late material-to-mark handoff
+
+The left contact sequence is the upper shoulder near source **(382, 380)**, then
+the waist near **(396, 540)**. The right is independently authored: the waist near
+**(699, 560)**, then the upper shoulder near **(714, 450)**. The first contacts arrive
+at 2831.8ms / 2867.3ms; the second contacts at 2896.8ms / 2930.9ms. Top/bottom fronts
+consume the short seam ends rather than leave a tall continuous channel.
+
+These locations clear temporary cream beside the completed j1 shoulder, descending
+j3, and a2's inward projection. At the second-contact stage, unrelated temporary
+cream is below 0.2% of either red field, in short narrow seams rather than a large
+ambiguous shape. Coverage is complete by **2971.8ms left / 3004.2ms right**, before
+j2 (3070ms) and a1 (3040ms) begin. The original mask-detachment times remain unchanged.
+The last 105ms only increase overlap under already unified red.
+
+The canonical cream groups keep their exact paths and independent localized masks.
+No temporary path morphs into a letter, no extra mask is introduced, and no J/A
+start time, duration, order, direction, easing, or brush profile changes in this pass.
+
+| Morph V2 stage | Start (ms) | End (ms) |
+| --- | ---: | ---: |
+| Left fill | 2176.8 | 3076.8 |
+| Right fill | 2226.9 | 3106.9 |
+| J: j1 / j3 / j2 / j4 | 2440 / 2690 / 3070 / 3290 | 2740 / 3120 / 3340 / 3640 |
+| A: a2 / a1 | 2580 / 3040 | 3090 / 3530 |
+| Completed hold | 3640 | 4060 |
+
+The V2 J/A schedule is unchanged by the full-perimeter correction: J starts during
+the perimeter fronts' advance, not after closure. A joins 140ms later. All six localized brush-mask
+durations, piece order, directions, and 50ms handoffs are preserved; only their V2
+schedule advances 240ms. Red finishes while the deliberate J/A strokes continue.
+The common 4060ms preview clock is retained, with a longer completed hold in V2.
+
+Only V2's active brush frontier changes: a slightly tapered profile with broad pressure
+variation up to 4.5 source units (previously 3), plus a tiny local shoulder. Its movement
+reveals the original crisp cream paths behind it, not roughened copies. No literal tool,
+blur, texture, or persistent edge treatment is added.
+
+Incoming lines, contacts, retraction, and perimeter construction are unchanged.
+Reduced motion bypasses the morph and immediately shows the completed unmasked mark;
+changing the preference mid-playback settles without an automatic restart.
+
+Validation is limited to typecheck, build, canonical checksum, completed-state fidelity,
+basic containment, and a reduced-motion smoke check. No exhaustive frame-by-frame QA.
+
+### Earlier engraving study (historical reference)
+
+The notes and timing table below describe the earlier continuous-engraving study,
+not the current A/B choreography above.
+
+#### Stroke -> architecture -> saturation -> engraving
 
 Both incoming lines remain horizontal at source-space `y=540`. The left line runs
 from `(-330, 540)` to `(246.69278996865205, 540)`, the exact intersection with the slightly
@@ -160,7 +283,7 @@ All reveal masks remain outside the canonical SVG. Only reveal mechanisms change
 the artwork never translates, scales, morphs, or changes path data. Completed artwork
 masks detach to avoid residual clipping. The empty guide windows stay attached.
 
-### Timeline (milliseconds from replay)
+#### Earlier timeline (milliseconds from replay)
 
 | Element / stage | Start | End | Reveal direction |
 | --- | ---: | ---: | --- |

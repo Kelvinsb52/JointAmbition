@@ -2,6 +2,8 @@ import { type MarkGroup, verifyCanonicalGeometry } from './canonicalArtwork';
 import {
   CONTOUR_EASING_POINTS, getOuterConstruction, getSaturationStrokeWidth, type ConstructionSide,
 } from './constructionGeometry';
+import { createMorphFill, type EntranceFillMode } from './morphFill';
+import { createMorphFillV2, MORPH_V2_BRUSH_ADVANCE, MORPH_V2_FILL_DURATION } from './morphFillV2';
 
 export const LINE_STAGES = [
   { side: 'left', start: 240, end: 1320, retractEnd: 2040, easing: 'cubic-bezier(.55,.02,.85,.65)' },
@@ -96,8 +98,19 @@ export function createEntranceTimeline(
   masks: SVGDefsElement,
   prefix: string,
   onUpdate: (state: EntranceState) => void,
+  fillMode: EntranceFillMode = 'current',
 ) {
+  const isMorphV2 = fillMode === 'morph-v2';
+  const outerStages = isMorphV2
+    ? OUTER_STAGES.map(stage => ({ ...stage, fillEnd: stage.fillStart + MORPH_V2_FILL_DURATION[stage.side] }))
+    : OUTER_STAGES;
+  const brushStages = isMorphV2
+    ? BRUSH_STAGES.map(stage => ({
+      ...stage, start: stage.start - MORPH_V2_BRUSH_ADVANCE, end: stage.end - MORPH_V2_BRUSH_ADVANCE,
+    }))
+    : BRUSH_STAGES;
   const animations: Animation[] = [];
+  const morphFills: ReturnType<typeof createMorphFill>[] = [];
   const maskedElements: Array<{ element: SVGGraphicsElement; maskId: string; end: number | null }> = [];
   const guideWindows: Array<{ rect: SVGRectElement; width: number; end: number }> = [];
   const outerFills: Array<{
@@ -196,7 +209,7 @@ export function createEntranceTimeline(
     reveal(line, `line-${stage.side}`, stage.side, stage.start, stage.end, stage.easing, stage.retractEnd);
   }
 
-  for (const stage of OUTER_STAGES) {
+  for (const stage of outerStages) {
     const group = artwork.querySelector(`[data-ja-source-id="${stage.group}"]`);
     const source = group?.querySelector('path');
     if (!(group instanceof SVGGElement) || !(source instanceof SVGPathElement)) {
@@ -214,6 +227,64 @@ export function createEntranceTimeline(
     mask.setAttribute('y', String(bounds.minY - 16));
     mask.setAttribute('width', String(bounds.maxX - bounds.minX + 32));
     mask.setAttribute('height', String(bounds.maxY - bounds.minY + 32));
+    masks.append(mask);
+    maskedElements.push({ element: group, maskId: mask.id, end: stage.fillEnd });
+
+    const clip = document.createElementNS(SVG_NS, 'clipPath');
+    clip.id = `${prefix}-contour-clip-${stage.side}`;
+    clip.setAttribute('clipPathUnits', 'userSpaceOnUse');
+    const silhouette = document.createElementNS(SVG_NS, 'use');
+    silhouette.setAttribute('href', `#${source.id}`);
+    clip.append(silhouette);
+    masks.append(clip);
+    const contours = document.createElementNS(SVG_NS, 'g');
+    contours.setAttribute('clip-path', `url(#${clip.id})`);
+    contours.setAttribute('data-ja-contours', stage.side);
+    constructionLayer.append(contours);
+
+    for (const direction of ['forward', 'backward'] as const) {
+      const contour = document.createElementNS(SVG_NS, 'path');
+      contour.setAttribute('d', pathData);
+      contour.setAttribute('data-ja-contour-source', stage.group);
+      contour.setAttribute('fill', 'none');
+      contour.setAttribute('stroke', 'currentColor');
+      const drawMask = document.createElementNS(SVG_NS, 'mask');
+      drawMask.id = `${prefix}-contour-${stage.side}-${direction}`;
+      drawMask.setAttribute('maskUnits', 'userSpaceOnUse');
+      drawMask.setAttribute('maskContentUnits', 'userSpaceOnUse');
+      for (const attribute of ['x', 'y', 'width', 'height']) {
+        drawMask.setAttribute(attribute, mask.getAttribute(attribute)!);
+      }
+      const tracer = document.createElementNS(SVG_NS, 'path');
+      tracer.setAttribute('d', pathData);
+      tracer.setAttribute('fill', 'none');
+      tracer.setAttribute('stroke', 'white');
+      tracer.setAttribute('stroke-width', '24');
+      tracer.setAttribute('stroke-linecap', 'butt');
+      tracer.setAttribute('data-ja-trace', `${stage.side}-${direction}`);
+      drawMask.append(tracer);
+      masks.append(drawMask);
+      contour.setAttribute('mask', `url(#${drawMask.id})`);
+      contours.append(contour);
+      const length = direction === 'forward' ? construction.forwardLength : construction.backwardLength;
+      const initial = { strokeDasharray: `0 ${perimeter}`, strokeDashoffset: String(-contactDistance) };
+      const final = {
+        strokeDasharray: `${length} ${perimeter - length}`,
+        strokeDashoffset: String((direction === 'backward' ? length : 0) - contactDistance),
+      };
+      // Dash only an exact source-path copy inside the mask; the visible stroke never leaves the source silhouette.
+      animate(tracer, [
+        { offset: 0, ...initial },
+        { offset: stage.contourStart / ENTRANCE_DURATION, ...initial, easing: CONTOUR_EASING },
+        { offset: stage.contourEnd / ENTRANCE_DURATION, ...final },
+        { offset: 1, ...final },
+      ]);
+    }
+    if (fillMode === 'morph' || isMorphV2) {
+      morphFills.push(isMorphV2 ? createMorphFillV2(mask, contours, stage) : createMorphFill(mask, contours, stage));
+      continue;
+    }
+
     const boundary = document.createElementNS(SVG_NS, 'path');
     boundary.setAttribute('data-ja-saturation', stage.side);
     boundary.setAttribute('d', pathData);
@@ -312,59 +383,6 @@ export function createEntranceTimeline(
       { offset: 1, strokeWidth: width },
     ]);
     mask.append(boundary);
-    masks.append(mask);
-    maskedElements.push({ element: group, maskId: mask.id, end: stage.fillEnd });
-
-    const clip = document.createElementNS(SVG_NS, 'clipPath');
-    clip.id = `${prefix}-contour-clip-${stage.side}`;
-    clip.setAttribute('clipPathUnits', 'userSpaceOnUse');
-    const silhouette = document.createElementNS(SVG_NS, 'use');
-    silhouette.setAttribute('href', `#${source.id}`);
-    clip.append(silhouette);
-    masks.append(clip);
-    const contours = document.createElementNS(SVG_NS, 'g');
-    contours.setAttribute('clip-path', `url(#${clip.id})`);
-    contours.setAttribute('data-ja-contours', stage.side);
-    constructionLayer.append(contours);
-
-    for (const direction of ['forward', 'backward'] as const) {
-      const contour = document.createElementNS(SVG_NS, 'path');
-      contour.setAttribute('d', pathData);
-      contour.setAttribute('data-ja-contour-source', stage.group);
-      contour.setAttribute('fill', 'none');
-      contour.setAttribute('stroke', 'currentColor');
-      const drawMask = document.createElementNS(SVG_NS, 'mask');
-      drawMask.id = `${prefix}-contour-${stage.side}-${direction}`;
-      drawMask.setAttribute('maskUnits', 'userSpaceOnUse');
-      drawMask.setAttribute('maskContentUnits', 'userSpaceOnUse');
-      for (const attribute of ['x', 'y', 'width', 'height']) {
-        drawMask.setAttribute(attribute, mask.getAttribute(attribute)!);
-      }
-      const tracer = document.createElementNS(SVG_NS, 'path');
-      tracer.setAttribute('d', pathData);
-      tracer.setAttribute('fill', 'none');
-      tracer.setAttribute('stroke', 'white');
-      tracer.setAttribute('stroke-width', '24');
-      tracer.setAttribute('stroke-linecap', 'butt');
-      tracer.setAttribute('data-ja-trace', `${stage.side}-${direction}`);
-      drawMask.append(tracer);
-      masks.append(drawMask);
-      contour.setAttribute('mask', `url(#${drawMask.id})`);
-      contours.append(contour);
-      const length = direction === 'forward' ? construction.forwardLength : construction.backwardLength;
-      const initial = { strokeDasharray: `0 ${perimeter}`, strokeDashoffset: String(-contactDistance) };
-      const final = {
-        strokeDasharray: `${length} ${perimeter - length}`,
-        strokeDashoffset: String((direction === 'backward' ? length : 0) - contactDistance),
-      };
-      // Dash only an exact source-path copy inside the mask; the visible stroke never leaves the source silhouette.
-      animate(tracer, [
-        { offset: 0, ...initial },
-        { offset: stage.contourStart / ENTRANCE_DURATION, ...initial, easing: CONTOUR_EASING },
-        { offset: stage.contourEnd / ENTRANCE_DURATION, ...final },
-        { offset: 1, ...final },
-      ]);
-    }
     outerFills.push({
       boundary, materialBlend, attractorDrifts, attractionBlend, torsion, wettingBlend, displacement, contours,
       side: stage.side, maxDepth: finalWidth / 2,
@@ -372,7 +390,7 @@ export function createEntranceTimeline(
     });
   }
 
-  for (const stage of BRUSH_STAGES) {
+  for (const stage of brushStages) {
     const group = artwork.querySelector(`[data-ja-source-id="${stage.group}"]`);
     if (!(group instanceof SVGGElement)) throw new Error(`Missing canonical JA group ${stage.group}.`);
     // Bounds and masks stay in the group's own coordinate system, including the translated j2.
@@ -400,13 +418,20 @@ export function createEntranceTimeline(
     axis.setAttribute('transform', transforms[stage.from]);
     const front = document.createElementNS(SVG_NS, 'path');
     const tip = (y: number, pressure = 0) => `${stage.tilt * (y - cross / 2) + pressure} ${y}`;
-    front.setAttribute('d', [
+    front.setAttribute('d', (isMorphV2 ? [
+      `M ${-span - margin * 2} -4 L ${tip(-4, -1)}`,
+      `C ${tip(cross * .10, 2)} ${tip(cross * .23, 4.5)} ${tip(cross * .34, 1)}`,
+      `C ${tip(cross * .42, -.5)} ${tip(cross * .52, -3.5)} ${tip(cross * .61, -1)}`,
+      `C ${tip(cross * .67, .5)} ${tip(cross * .72, 1.5)} ${tip(cross * .77, .5)}`,
+      `C ${tip(cross * .84, 3)} ${tip(cross * .94, 1.5)} ${tip(cross + 4, -1)}`,
+      `L ${-span - margin * 2} ${cross + 4} Z`,
+    ] : [
       `M ${-span - margin * 2} -4 L ${tip(-4)}`,
       `C ${tip(cross * .12, 3)} ${tip(cross * .24, 3)} ${tip(cross * .36)}`,
       `S ${tip(cross * .55, -3)} ${tip(cross * .68)}`,
       `S ${tip(cross * .88, 2)} ${tip(cross + 4)}`,
       `L ${-span - margin * 2} ${cross + 4} Z`,
-    ].join(' '));
+    ]).join(' '));
     front.setAttribute('fill', 'white');
     front.setAttribute('data-ja-brush', stage.group);
     axis.append(front);
@@ -487,6 +512,7 @@ export function createEntranceTimeline(
       }
       fill.contours.style.display = reducedMotion.matches || time < fill.contourStart || complete ? 'none' : '';
     }
+    for (const fill of morphFills) fill.sync(time, reducedMotion.matches);
   }
 
   function report() {
@@ -567,6 +593,7 @@ export function createEntranceTimeline(
       window.cancelAnimationFrame(frame);
       reducedMotion.removeEventListener('change', syncMotionPreference);
       for (const animation of animations) animation.cancel();
+      for (const fill of morphFills) fill.destroy();
       for (const { element } of maskedElements) element.removeAttribute('mask');
       constructionLayer.remove();
       masks.replaceChildren();

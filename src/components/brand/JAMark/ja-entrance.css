@@ -123,6 +123,19 @@
   cursor: default;
 }
 
+.ja-entrance-preview__fill-modes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.ja-entrance-preview__fill-modes button[aria-pressed="true"] {
+  background: var(--ja-red);
+  border-color: var(--ja-red);
+  color: var(--ja-cream);
+}
+
 .ja-entrance-preview :is(button, input, a):focus-visible {
   outline: 2px solid var(--ja-red);
   outline-offset: 4px;
