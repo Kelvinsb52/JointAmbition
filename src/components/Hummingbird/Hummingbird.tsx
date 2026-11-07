@@ -39,12 +39,46 @@ export default function Hummingbird({
   style,
 }: HummingbirdProps) {
   const hostRef = useRef<HTMLDivElement>(null);
+  const motionRef = useRef<ReturnType<typeof attachHummingbirdMotion> | null>(null);
+  const autoplayArmedRef = useRef(true);
+  const reducedMotionRef = useRef(false);
 
   useEffect(() => {
     const host = hostRef.current;
     if (!host) return;
     const motion = attachHummingbirdMotion(host, { cyclesPerSecond });
-    return () => motion.destroy();
+    motionRef.current = motion;
+
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const syncReducedMotion = () => {
+      reducedMotionRef.current = reducedMotion.matches;
+      autoplayArmedRef.current = !reducedMotion.matches;
+    };
+    syncReducedMotion();
+    reducedMotion.addEventListener('change', syncReducedMotion);
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (!entry || reducedMotionRef.current) return;
+        const ratio = entry.intersectionRatio;
+        if (ratio >= 0.4 && autoplayArmedRef.current) {
+          motionRef.current?.play();
+          autoplayArmedRef.current = false;
+          return;
+        }
+        if (ratio <= 0.12) autoplayArmedRef.current = true;
+      },
+      { threshold: [0, 0.12, 0.4, 1] },
+    );
+    observer.observe(host);
+
+    return () => {
+      observer.disconnect();
+      reducedMotion.removeEventListener('change', syncReducedMotion);
+      motion.destroy();
+      motionRef.current = null;
+    };
   }, [cyclesPerSecond]);
 
   const iconStyle = {

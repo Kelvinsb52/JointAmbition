@@ -1,6 +1,8 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
 import Hummingbird, { HummingbirdVector } from '../components/Hummingbird/Hummingbird';
+import JAHeroEntrance from '../components/brand/JAMark/JAHeroEntrance';
+import { getEntranceDuration, type EntranceState } from '../components/brand/JAMark/entranceTimeline';
 import FooterHomeLogo from './components/FooterHomeLogo';
 import botanicalDesktop from '../assets/botanical/botanical-frame-desktop.svg';
 import botanicalMobile from '../assets/botanical/botanical-frame-desktop.svg';
@@ -23,6 +25,28 @@ const styles = `
     font-family:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     background:var(--paper);
     color:var(--ink);
+  }
+  .ja-loader-overlay{
+    position:fixed;
+    inset:0;
+    z-index:1000;
+    display:grid;
+    place-items:center;
+    padding:max(env(safe-area-inset-top),16px) max(env(safe-area-inset-right),16px) max(env(safe-area-inset-bottom),16px) max(env(safe-area-inset-left),16px);
+    height:100dvh;
+    min-height:100dvh;
+    width:100%;
+    overflow:hidden;
+    background:var(--paper);
+  }
+  .ja-loader-overlay .ja-entrance{
+    min-height:100%;
+    width:100%;
+    background:var(--paper);
+    border-radius:0;
+  }
+  .ja-loader-overlay .ja-entrance__composition{
+    width:min(100%,720px);
   }
   h1,h2,h3,h4{
     font-family:Georgia,"Times New Roman",serif;
@@ -598,6 +622,14 @@ const styles = `
       padding-top:24px;
     }
   }
+  @media (max-width: 640px){
+    .ja-loader-overlay .ja-entrance__composition{
+      width:min(100%,560px);
+      transform:translateY(-1dvh);
+      border-radius:0;
+      box-shadow:none;
+    }
+  }
 
 `;
 
@@ -619,15 +651,49 @@ const INQUIRY_FIELD_ERROR_MESSAGES: Record<InquiryField, (validity: ValidityStat
 };
 
 export default function App() {
+  const [showLoader, setShowLoader] = useState(() => (
+    typeof window === 'undefined' ? true : !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  ));
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [formStatus, setFormStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<InquiryField, string>>>({});
+  const loaderDuration = getEntranceDuration();
+
+  useEffect(() => {
+    if (!showLoader) return;
+    const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const handleMotionPreference = (event: MediaQueryListEvent) => {
+      if (event.matches) setShowLoader(false);
+    };
+    motionQuery.addEventListener('change', handleMotionPreference);
+    return () => motionQuery.removeEventListener('change', handleMotionPreference);
+  }, [showLoader]);
+
+  useEffect(() => {
+    if (!showLoader) return;
+    const body = document.body;
+    const previousOverflow = body.style.overflow;
+    body.style.overflow = 'hidden';
+    return () => {
+      body.style.overflow = previousOverflow;
+    };
+  }, [showLoader]);
+
+  useEffect(() => {
+    if (!showLoader) return;
+    const timer = window.setTimeout(() => setShowLoader(false), loaderDuration + 180);
+    return () => window.clearTimeout(timer);
+  }, [loaderDuration, showLoader]);
+
+  const handleLoaderUpdate = (state: EntranceState) => {
+    if (state.reducedMotion || state.time >= loaderDuration) setShowLoader(false);
+  };
 
   // hooks into native constraint validation (required/type=email) instead of replacing it: the browser
   // still blocks submission and focuses the first invalid field on its own; this only swaps the native
   // validation bubble for an on-brand inline message associated via aria-describedby
   const handleFieldInvalid = (field: InquiryField) => (
-    event: React.InvalidEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    event: React.FormEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     event.preventDefault();
     // canceling the native "invalid" event (to show our own message instead of the browser's bubble)
@@ -823,6 +889,11 @@ export default function App() {
   return (
     <>
       <style>{styles}</style>
+      {showLoader && (
+        <div className="ja-loader-overlay" aria-hidden="true">
+          <JAHeroEntrance onUpdate={handleLoaderUpdate} />
+        </div>
+      )}
 
       <nav className="nav" ref={navRef}>
         <div className="nav-inner">

@@ -8,6 +8,11 @@ declare module '*.svg' {
   export default source;
 }
 
+declare module '*.svg?raw' {
+  const source: string;
+  export default source;
+}
+
 declare module '*.css' {
   const stylesheet: Record<string, string>;
   export default stylesheet;
