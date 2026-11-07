@@ -39,7 +39,7 @@ export default function Hummingbird({
   style,
 }: HummingbirdProps) {
   const hostRef = useRef<HTMLDivElement>(null);
-  const autoplayedRef = useRef(false);
+  const viewportArmedRef = useRef(true);
 
   useEffect(() => {
     const host = hostRef.current;
@@ -53,16 +53,16 @@ export default function Hummingbird({
     let observer: IntersectionObserver | null = null;
     if (!reducedMotion.matches) {
       observer = new view.IntersectionObserver(entries => {
-        if (autoplayedRef.current) return;
         for (const entry of entries) {
-          if (!entry.isIntersecting || entry.intersectionRatio < 0.4) continue;
-          autoplayedRef.current = true;
+          if (!entry.isIntersecting || entry.intersectionRatio <= 0.12) {
+            viewportArmedRef.current = true;
+            continue;
+          }
+          if (!viewportArmedRef.current || entry.intersectionRatio < 0.4) continue;
+          viewportArmedRef.current = false;
           motion.play();
-          observer?.disconnect();
-          observer = null;
-          break;
         }
-      }, { threshold: [0.4] });
+      }, { threshold: [0, 0.12, 0.4, 1] });
       observer.observe(host);
     }
     return () => {
