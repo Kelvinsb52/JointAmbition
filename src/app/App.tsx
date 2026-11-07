@@ -54,6 +54,14 @@ const styles = `
     width:min(100%, 1200px);
     max-width:100%;
   }
+  @media (min-width: 768px){
+    .ja-loader-overlay .ja-entrance__composition{
+      border-radius:0;
+      box-shadow:none;
+      background:transparent;
+      overflow:visible;
+    }
+  }
   h1,h2,h3,h4{
     font-family:Georgia,"Times New Roman",serif;
     font-weight:400;
