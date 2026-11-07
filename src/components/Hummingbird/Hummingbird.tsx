@@ -39,12 +39,36 @@ export default function Hummingbird({
   style,
 }: HummingbirdProps) {
   const hostRef = useRef<HTMLDivElement>(null);
+  const autoplayedRef = useRef(false);
 
   useEffect(() => {
     const host = hostRef.current;
     if (!host) return;
     const motion = attachHummingbirdMotion(host, { cyclesPerSecond });
-    return () => motion.destroy();
+    const view = host.ownerDocument.defaultView;
+    if (!view) {
+      return () => motion.destroy();
+    }
+    const reducedMotion = view.matchMedia('(prefers-reduced-motion: reduce)');
+    let observer: IntersectionObserver | null = null;
+    if (!reducedMotion.matches) {
+      observer = new view.IntersectionObserver(entries => {
+        if (autoplayedRef.current) return;
+        for (const entry of entries) {
+          if (!entry.isIntersecting || entry.intersectionRatio < 0.4) continue;
+          autoplayedRef.current = true;
+          motion.play();
+          observer?.disconnect();
+          observer = null;
+          break;
+        }
+      }, { threshold: [0.4] });
+      observer.observe(host);
+    }
+    return () => {
+      observer?.disconnect();
+      motion.destroy();
+    };
   }, [cyclesPerSecond]);
 
   const iconStyle = {

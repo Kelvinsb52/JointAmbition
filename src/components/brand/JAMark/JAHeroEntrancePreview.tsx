@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { Link } from 'react-router';
 import masterUrl from '../../../assets/brand/joint-ambition-mark.master.svg?url&no-inline';
 import JAHeroEntrance from './JAHeroEntrance';
-import { ENTRANCE_DURATION, type EntranceControls, type EntranceState } from './entranceTimeline';
+import { getEntranceDuration, type EntranceControls, type EntranceState } from './entranceTimeline';
 import type { EntranceFillMode } from './morphFill';
 
 export default function JAHeroEntrancePreview() {
@@ -10,6 +10,7 @@ export default function JAHeroEntrancePreview() {
   const [state, setState] = useState<EntranceState>({ time: 0, playing: false, reducedMotion: false });
   const [compareSource, setCompareSource] = useState(false);
   const [fillMode, setFillMode] = useState<EntranceFillMode>('current');
+  const entranceDuration = getEntranceDuration(fillMode);
 
   function replay() {
     setCompareSource(false);
@@ -49,24 +50,24 @@ export default function JAHeroEntrancePreview() {
           <button type="button" onClick={replay} disabled={state.reducedMotion}>Replay</button>
           <button
             type="button"
-            disabled={state.reducedMotion || compareSource || state.time >= ENTRANCE_DURATION}
+            disabled={state.reducedMotion || compareSource || state.time >= entranceDuration}
             onClick={() => state.playing ? entrance.current?.pause() : entrance.current?.play()}
           >
             {state.playing ? 'Pause' : 'Play'}
           </button>
-          <button type="button" onClick={() => entrance.current?.seek(ENTRANCE_DURATION)}>Completed mark</button>
-          <output aria-live="off">{(state.time / 1000).toFixed(2)} / {(ENTRANCE_DURATION / 1000).toFixed(2)} s</output>
+          <button type="button" onClick={() => entrance.current?.seek(entranceDuration)}>Completed mark</button>
+          <output aria-live="off">{(state.time / 1000).toFixed(2)} / {(entranceDuration / 1000).toFixed(2)} s</output>
         </div>
         <label className="ja-entrance-preview__scrubber">
           Timeline
           <input
             type="range"
             min="0"
-            max={ENTRANCE_DURATION}
+            max={entranceDuration}
             step="10"
             value={state.time}
             disabled={state.reducedMotion || compareSource}
-            aria-valuetext={`${(state.time / 1000).toFixed(2)} seconds of ${ENTRANCE_DURATION / 1000} seconds`}
+            aria-valuetext={`${(state.time / 1000).toFixed(2)} seconds of ${entranceDuration / 1000} seconds`}
             onChange={event => entrance.current?.seek(Number(event.currentTarget.value))}
           />
         </label>
@@ -75,7 +76,7 @@ export default function JAHeroEntrancePreview() {
             type="checkbox"
             checked={compareSource}
             onChange={event => {
-              entrance.current?.seek(ENTRANCE_DURATION);
+              entrance.current?.seek(entranceDuration);
               setCompareSource(event.currentTarget.checked);
             }}
           />

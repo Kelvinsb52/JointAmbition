@@ -2,16 +2,39 @@
 .ja-entrance-preview {
   --ja-red: #bf0000;
   --ja-cream: var(--paper, #efe7d8);
+  --ja-cream-raise: #f4ede2;
+  --ja-cream-fall: #e8dfce;
+  --ja-ink-wash: rgba(23, 23, 20, 0.055);
+  --ja-grain-opacity: 0.07;
+  --ja-grain-blend: normal;
 }
 
 .ja-entrance {
+  position: relative;
   display: grid;
   place-items: center;
   width: 100%;
   min-height: clamp(300px, 62svh, 760px);
-  background: var(--ja-cream);
+  background:
+    radial-gradient(125% 80% at 50% 12%, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0) 66%),
+    radial-gradient(110% 78% at 50% 100%, var(--ja-ink-wash), rgba(23, 23, 20, 0) 72%),
+    linear-gradient(180deg, var(--ja-cream-raise), var(--ja-cream) 54%, var(--ja-cream-fall));
   color: var(--ja-red);
   isolation: isolate;
+  overflow: hidden;
+}
+
+.ja-entrance::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 320' preserveAspectRatio='none'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='2.35' numOctaves='2' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0.07 0 0 0 0.465 0 0.07 0 0 0.457 0 0 0.07 0 0.438 0 0 0 0.58 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: cover;
+  background-repeat: no-repeat;
+  opacity: var(--ja-grain-opacity);
+  mix-blend-mode: var(--ja-grain-blend);
+  pointer-events: none;
+  z-index: 0;
 }
 
 .ja-entrance__composition {
@@ -20,6 +43,12 @@
   height: auto;
   aspect-ratio: 5 / 3;
   overflow: hidden;
+  position: relative;
+  z-index: 1;
+  border-radius: clamp(18px, 2.8vw, 34px);
+  box-shadow:
+    inset 0 0 0 1px rgba(86, 73, 56, 0.16),
+    0 28px 56px rgba(27, 20, 10, 0.1);
 }
 
 .ja-entrance__lines path {

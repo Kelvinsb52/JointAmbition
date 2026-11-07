@@ -5,6 +5,12 @@ import {
 import { createMorphFill, type EntranceFillMode } from './morphFill';
 import { createMorphFillV2, MORPH_V2_BRUSH_ADVANCE, MORPH_V2_FILL_DURATION } from './morphFillV2';
 
+const CURRENT_TIMING_SCALE = .443;
+const DEFAULT_FINAL_HOLD = 180;
+const CURRENT_FINAL_HOLD = 100;
+const CURRENT_FADE_DURATION = 280;
+const compressTime = (milliseconds: number) => Math.round(milliseconds * CURRENT_TIMING_SCALE);
+
 export const LINE_STAGES = [
   { side: 'left', start: 240, end: 1320, retractEnd: 2040, easing: 'cubic-bezier(.55,.02,.85,.65)' },
   { side: 'right', start: 310, end: 1410, retractEnd: 2160, easing: 'cubic-bezier(.50,0,.82,.68)' },
@@ -39,10 +45,19 @@ const BRUSH_STAGES: ReadonlyArray<{
   { group: 'a1', from: 'bottom', start: 3280, end: 3770, tilt: .9 },
 ];
 
-export const ENTRANCE_DURATION = Math.max(
+const BASE_ENTRANCE_DURATION = Math.max(
   ...OUTER_STAGES.map(stage => stage.fillEnd),
   ...BRUSH_STAGES.map(stage => stage.end),
-) + 180;
+) + DEFAULT_FINAL_HOLD;
+
+export const ENTRANCE_DURATION = Math.max(
+  ...OUTER_STAGES.map(stage => compressTime(stage.fillEnd)),
+  ...BRUSH_STAGES.map(stage => compressTime(stage.end)),
+) + CURRENT_FINAL_HOLD + CURRENT_FADE_DURATION;
+
+export function getEntranceDuration(fillMode: EntranceFillMode) {
+  return fillMode === 'current' ? ENTRANCE_DURATION : BASE_ENTRANCE_DURATION;
+}
 
 export interface EntranceState {
   time: number;
@@ -100,15 +115,44 @@ export function createEntranceTimeline(
   onUpdate: (state: EntranceState) => void,
   fillMode: EntranceFillMode = 'current',
 ) {
+  const useCompressedTiming = fillMode === 'current';
   const isMorphV2 = fillMode === 'morph-v2';
-  const outerStages = isMorphV2
-    ? OUTER_STAGES.map(stage => ({ ...stage, fillEnd: stage.fillStart + MORPH_V2_FILL_DURATION[stage.side] }))
+  const lineStages = useCompressedTiming
+    ? LINE_STAGES.map(stage => ({
+      ...stage,
+      start: compressTime(stage.start),
+      end: compressTime(stage.end),
+      retractEnd: compressTime(stage.retractEnd),
+    }))
+    : LINE_STAGES;
+  const baseOuterStages = useCompressedTiming
+    ? OUTER_STAGES.map(stage => ({
+      ...stage,
+      contourStart: compressTime(stage.contourStart),
+      contourEnd: compressTime(stage.contourEnd),
+      fillStart: compressTime(stage.fillStart),
+      fillEnd: compressTime(stage.fillEnd),
+    }))
     : OUTER_STAGES;
+  const outerStages = isMorphV2
+    ? baseOuterStages.map(stage => ({ ...stage, fillEnd: stage.fillStart + MORPH_V2_FILL_DURATION[stage.side] }))
+    : baseOuterStages;
+  const baseBrushStages = useCompressedTiming
+    ? BRUSH_STAGES.map(stage => ({
+      ...stage,
+      start: compressTime(stage.start),
+      end: compressTime(stage.end),
+    }))
+    : BRUSH_STAGES;
   const brushStages = isMorphV2
     ? BRUSH_STAGES.map(stage => ({
       ...stage, start: stage.start - MORPH_V2_BRUSH_ADVANCE, end: stage.end - MORPH_V2_BRUSH_ADVANCE,
     }))
-    : BRUSH_STAGES;
+    : baseBrushStages;
+  const resolvedMarkTime = Math.max(...outerStages.map(stage => stage.fillEnd), ...brushStages.map(stage => stage.end));
+  const fadeStart = useCompressedTiming ? resolvedMarkTime + CURRENT_FINAL_HOLD : Number.POSITIVE_INFINITY;
+  const fadeEnd = useCompressedTiming ? fadeStart + CURRENT_FADE_DURATION : Number.POSITIVE_INFINITY;
+  const entranceDuration = useCompressedTiming ? fadeEnd : BASE_ENTRANCE_DURATION;
   const animations: Animation[] = [];
   const morphFills: ReturnType<typeof createMorphFill>[] = [];
   const maskedElements: Array<{ element: SVGGraphicsElement; maskId: string; end: number | null }> = [];
@@ -134,6 +178,11 @@ export function createEntranceTimeline(
   if (!(artworkHost instanceof SVGGElement) || artworkHost.parentNode !== composition) {
     throw new Error('The JA construction layer requires the canonical artwork host.');
   }
+  const entranceLayer = composition.parentElement;
+  if (!(entranceLayer instanceof HTMLDivElement)) {
+    throw new Error('The JA entrance composition must be wrapped by a host layer.');
+  }
+  const entranceHost = entranceLayer;
   artworkHost.after(constructionLayer);
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   let playing = false;
@@ -143,7 +192,7 @@ export function createEntranceTimeline(
 
   function animate(element: SVGElement, keyframes: Keyframe[]) {
     const animation = element.animate(keyframes, {
-      duration: ENTRANCE_DURATION,
+      duration: entranceDuration,
       fill: 'both',
       easing: 'linear',
     });
@@ -188,20 +237,20 @@ export function createEntranceTimeline(
     const hidden = `translate(${x}px, ${y}px)`;
     const keyframes: Keyframe[] = [
       { offset: 0, transform: hidden },
-      { offset: start / ENTRANCE_DURATION, transform: hidden, easing },
-      { offset: end / ENTRANCE_DURATION, transform: 'translate(0px, 0px)', easing: RETRACTION_EASING },
+      { offset: start / entranceDuration, transform: hidden, easing },
+      { offset: end / entranceDuration, transform: 'translate(0px, 0px)', easing: RETRACTION_EASING },
     ];
     const consumed = retractEnd ? `translate(${-x}px, ${-y}px)` : 'translate(0px, 0px)';
-    if (retractEnd) keyframes.push({ offset: retractEnd / ENTRANCE_DURATION, transform: consumed });
+    if (retractEnd) keyframes.push({ offset: retractEnd / entranceDuration, transform: consumed });
     keyframes.push({ offset: 1, transform: consumed });
     animate(rect, keyframes);
     return rect;
   }
 
-  for (const stage of LINE_STAGES) {
+  for (const stage of lineStages) {
     const line = composition.querySelector(`[data-ja-line="${stage.side}"]`);
     if (!(line instanceof SVGPathElement)) throw new Error(`Missing JA ${stage.side} line.`);
-    const outerStage = OUTER_STAGES.find(outer => outer.side === stage.side);
+    const outerStage = outerStages.find(outer => outer.side === stage.side);
     const source = artwork.querySelector(`[data-ja-source-id="${outerStage?.group}"] > path`);
     if (!(source instanceof SVGPathElement)) throw new Error(`Missing JA ${stage.side} outer geometry.`);
     const { contact } = getOuterConstruction(source.getAttribute('d') ?? '', stage.side);
@@ -275,8 +324,8 @@ export function createEntranceTimeline(
       // Dash only an exact source-path copy inside the mask; the visible stroke never leaves the source silhouette.
       animate(tracer, [
         { offset: 0, ...initial },
-        { offset: stage.contourStart / ENTRANCE_DURATION, ...initial, easing: CONTOUR_EASING },
-        { offset: stage.contourEnd / ENTRANCE_DURATION, ...final },
+        { offset: stage.contourStart / entranceDuration, ...initial, easing: CONTOUR_EASING },
+        { offset: stage.contourEnd / entranceDuration, ...final },
         { offset: 1, ...final },
       ]);
     }
@@ -378,8 +427,8 @@ export function createEntranceTimeline(
     const width = String(finalWidth);
     animate(boundary, [
       { offset: 0, strokeWidth: '0' },
-      { offset: stage.fillStart / ENTRANCE_DURATION, strokeWidth: '0', easing: SATURATION_EASING },
-      { offset: stage.fillEnd / ENTRANCE_DURATION, strokeWidth: width },
+      { offset: stage.fillStart / entranceDuration, strokeWidth: '0', easing: SATURATION_EASING },
+      { offset: stage.fillEnd / entranceDuration, strokeWidth: width },
       { offset: 1, strokeWidth: width },
     ]);
     mask.append(boundary);
@@ -442,18 +491,27 @@ export function createEntranceTimeline(
     const complete = `translateX(${span + margin}px)`;
     animate(front, [
       { offset: 0, transform: hidden },
-      { offset: stage.start / ENTRANCE_DURATION, transform: hidden, easing: BRUSH_EASING },
-      { offset: stage.end / ENTRANCE_DURATION, transform: complete },
+      { offset: stage.start / entranceDuration, transform: hidden, easing: BRUSH_EASING },
+      { offset: stage.end / entranceDuration, transform: complete },
       { offset: 1, transform: complete },
     ]);
   }
 
   // The browser's millisecond clock can round just below the exact duration even at completion.
   const currentTime = () => animations[0].effect?.getComputedTiming().progress === 1
-    ? ENTRANCE_DURATION
+    ? entranceDuration
     : Number(animations[0].currentTime ?? 0);
 
   function syncMasks(time: number) {
+    if (!useCompressedTiming || reducedMotion.matches) {
+      entranceHost.style.opacity = '1';
+    } else if (time >= fadeEnd) {
+      entranceHost.style.opacity = '0';
+    } else if (time <= fadeStart) {
+      entranceHost.style.opacity = '1';
+    } else {
+      entranceHost.style.opacity = String(1 - (time - fadeStart) / CURRENT_FADE_DURATION);
+    }
     for (const { rect, width, end } of guideWindows) {
       // A zero-area consumed window avoids fractional-contact antialiasing without changing stroke opacity.
       rect.setAttribute('width', String(time >= end ? 0 : width));
@@ -523,9 +581,9 @@ export function createEntranceTimeline(
     if (destroyed) return;
     const time = currentTime();
     syncMasks(time);
-    if (time >= ENTRANCE_DURATION) {
+    if (time >= entranceDuration) {
       playing = false;
-      syncMasks(ENTRANCE_DURATION);
+      syncMasks(entranceDuration);
       verifyCanonicalGeometry(artwork);
       report();
       frame = 0;
@@ -548,11 +606,11 @@ export function createEntranceTimeline(
   }
 
   function seek(time: number) {
-    if (!Number.isFinite(time) || time < 0 || time > ENTRANCE_DURATION) {
-      throw new RangeError(`JA timeline time must be between 0 and ${ENTRANCE_DURATION}ms.`);
+    if (!Number.isFinite(time) || time < 0 || time > entranceDuration) {
+      throw new RangeError(`JA timeline time must be between 0 and ${entranceDuration}ms.`);
     }
     pause();
-    const target = reducedMotion.matches ? ENTRANCE_DURATION : time;
+    const target = reducedMotion.matches ? entranceDuration : time;
     for (const animation of animations) animation.currentTime = target;
     syncMasks(target);
     lastReportedTime = -Infinity;
@@ -560,7 +618,7 @@ export function createEntranceTimeline(
   }
 
   function play() {
-    if (reducedMotion.matches || currentTime() >= ENTRANCE_DURATION || playing) return;
+    if (reducedMotion.matches || currentTime() >= entranceDuration || playing) return;
     const time = currentTime();
     syncMasks(time);
     playing = true;
@@ -579,11 +637,11 @@ export function createEntranceTimeline(
 
   function syncMotionPreference() {
     // A preference change settles immediately; opting back in never restarts motion unprompted.
-    seek(ENTRANCE_DURATION);
+    seek(entranceDuration);
   }
 
   reducedMotion.addEventListener('change', syncMotionPreference);
-  if (reducedMotion.matches) seek(ENTRANCE_DURATION);
+  if (reducedMotion.matches) seek(entranceDuration);
   else replay();
 
   return {
@@ -595,6 +653,7 @@ export function createEntranceTimeline(
       for (const animation of animations) animation.cancel();
       for (const fill of morphFills) fill.destroy();
       for (const { element } of maskedElements) element.removeAttribute('mask');
+      entranceHost.style.opacity = '1';
       constructionLayer.remove();
       masks.replaceChildren();
     },
