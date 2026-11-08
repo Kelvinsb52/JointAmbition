@@ -1011,7 +1011,7 @@ export default function App() {
           <div className="motif-stage">
             <div className="visual-card">
               <div className="hummingbird-mark">
-                  <Hummingbird size="100%" ring={false} color="#eee7da" strokeWidth={5.5} className="signature-motif-icon" label="Joint Ambition hummingbird" />
+                  <Hummingbird size="100%" ring={false} color="#eee7da" strokeWidth={5.5} className="signature-motif-icon" label="Joint Ambition hummingbird" autoplayEnabled={!showLoader} />
               </div>
               <div className="eyebrow" style={{ color: '#bdb6ad' }}>Signature Motif</div>
               <h2>Precision in motion.</h2>

@@ -12,6 +12,7 @@ export interface HummingbirdProps {
   className?: string;
   style?: CSSProperties;
   label?: string;
+  autoplayEnabled?: boolean;
 }
 
 export function HummingbirdVector({ className = 'ja-hummingbird__svg' }: { className?: string }) {
@@ -37,11 +38,29 @@ export default function Hummingbird({
   ring = true,
   className = '',
   style,
+  autoplayEnabled = true,
 }: HummingbirdProps) {
   const hostRef = useRef<HTMLDivElement>(null);
   const motionRef = useRef<ReturnType<typeof attachHummingbirdMotion> | null>(null);
   const autoplayArmedRef = useRef(true);
+  const autoplayEnabledRef = useRef(autoplayEnabled);
+  const visibilityRatioRef = useRef(0);
   const reducedMotionRef = useRef(false);
+
+  useEffect(() => {
+    const wasEnabled = autoplayEnabledRef.current;
+    autoplayEnabledRef.current = autoplayEnabled;
+    if (
+      autoplayEnabled
+      && !wasEnabled
+      && !reducedMotionRef.current
+      && autoplayArmedRef.current
+      && visibilityRatioRef.current >= 0.4
+    ) {
+      motionRef.current?.play();
+      autoplayArmedRef.current = false;
+    }
+  }, [autoplayEnabled]);
 
   useEffect(() => {
     const host = hostRef.current;
@@ -62,12 +81,13 @@ export default function Hummingbird({
         const entry = entries[0];
         if (!entry || reducedMotionRef.current) return;
         const ratio = entry.intersectionRatio;
+        visibilityRatioRef.current = ratio;
+        if (ratio <= 0.12) autoplayArmedRef.current = true;
+        if (!autoplayEnabledRef.current) return;
         if (ratio >= 0.4 && autoplayArmedRef.current) {
           motionRef.current?.play();
           autoplayArmedRef.current = false;
-          return;
         }
-        if (ratio <= 0.12) autoplayArmedRef.current = true;
       },
       { threshold: [0, 0.12, 0.4, 1] },
     );
