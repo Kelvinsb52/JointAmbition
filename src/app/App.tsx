@@ -1,8 +1,10 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
 import Hummingbird, { HummingbirdVector } from '../components/Hummingbird/Hummingbird';
 import JAHeroEntrance from '../components/brand/JAMark/JAHeroEntrance';
 import { getEntranceDuration, type EntranceState } from '../components/brand/JAMark/entranceTimeline';
+import VisionWord from '../components/VisionWord/VisionWord';
+import { useHeroScrollStage } from '../components/useHeroScrollStage';
 import FooterHomeLogo from './components/FooterHomeLogo';
 import botanicalDesktop from '../assets/botanical/botanical-frame-desktop.svg';
 import botanicalMobile from '../assets/botanical/botanical-frame-desktop.svg';
@@ -17,6 +19,8 @@ const styles = `
     --soft:#d9cfbf;
     --white:#f8f4ec;
     --menu-control-size:44px;
+    --mobile-nav-padding-y:16px;
+    --mobile-header-height:calc(var(--menu-control-size) + (var(--mobile-nav-padding-y) * 2) + 1px);
   }
   *{box-sizing:border-box}
   html{scroll-behavior:smooth}
@@ -118,6 +122,7 @@ const styles = `
     grid-template-columns:1.05fr .95fr;
     border-bottom:1px solid var(--line);
   }
+  .hero-stage{display:contents}
   .hero-copy{
     display:flex;flex-direction:column;justify-content:center;
     padding:96px 9vw 96px 6vw;
@@ -128,11 +133,79 @@ const styles = `
     margin-top:24px;
     max-width:760px;
   }
+  .vision-word{
+    display:inline-grid;
+    grid-template-areas:'stack';
+    line-height:1;
+    vertical-align:baseline;
+  }
+  .vision-word__layer{
+    grid-area:stack;
+    white-space:nowrap;
+    opacity:0;
+    transform:translateY(0) scale(1);
+    transition:opacity .18s ease, transform .2s ease;
+  }
+  .vision-word__italic{
+    font-style:italic;
+    font-family:Georgia,"Times New Roman",serif;
+  }
+  .vision-word[data-echo] .vision-word__layer{
+    transition-duration:.25s, .2s;
+  }
+  .vision-word__expressive{
+    font-family:'Gloock',Georgia,"Times New Roman",serif;
+    letter-spacing:.01em;
+  }
+  .vision-word__final{
+    font-style:normal;
+    font-family:Georgia,"Times New Roman",serif;
+  }
+  .vision-word[data-phase="italic"] .vision-word__italic{
+    opacity:1;
+    transform:translateY(0) scale(1);
+  }
+  .vision-word[data-phase="expressive"] .vision-word__expressive{
+    opacity:1;
+    transform:translateY(-.01em) scale(1.006);
+  }
+  .vision-word[data-phase="final"] .vision-word__final{
+    opacity:1;
+    transform:translateY(0) scale(1);
+  }
   .hero .lead{
     max-width:620px;margin-top:28px;
     font-size:18px;line-height:1.8;color:#4f4a43;
   }
   .hero-actions{display:flex;flex-wrap:wrap;gap:14px;margin-top:34px}
+  .hero-swipe-cue{
+    display:none;
+    align-items:center;
+    flex-direction:column;
+    gap:10px;
+    color:var(--ink);
+    margin-top:auto;
+  }
+  .hero-swipe-cue__rule{
+    width:1px;
+    height:42px;
+    background:#a61f2d;
+    opacity:.95;
+  }
+  .hero-swipe-cue__label{
+    font-size:10px;
+    text-transform:uppercase;
+    letter-spacing:.24em;
+    color:#5f5850;
+  }
+  .hero-swipe-cue__chevron{
+    width:8px;
+    height:8px;
+    border-right:1.5px solid #1b1a18;
+    border-bottom:1.5px solid #1b1a18;
+    transform:rotate(45deg);
+    opacity:.9;
+  }
   .hero-visual{
     position:relative;display:flex;align-items:center;justify-content:center;
     border:1px solid var(--line);
@@ -447,8 +520,41 @@ const styles = `
   }
   @media (max-width: 640px){
     .wrap{padding:0 20px}
-    .nav-inner{padding:16px 20px}
-    .hero-copy{padding:76px 24px}
+    .nav-inner{padding:var(--mobile-nav-padding-y) 20px}
+    .hero{
+      min-height:0;
+      display:flex;
+      flex-direction:column;
+    }
+    .hero-copy{
+      min-height:calc(100svh - var(--mobile-header-height));
+      padding:clamp(24px, 4svh, 40px) 24px calc(24px + env(safe-area-inset-bottom));
+      display:flex;
+      justify-content:flex-start;
+    }
+    .hero-copy__scene-content{max-width:460px}
+    .hero h1{margin-top:20px}
+    .hero .lead{margin-top:22px}
+    .hero-actions{
+      margin-top:28px;
+      display:grid;
+      grid-template-columns:1fr;
+      gap:12px;
+      width:100%;
+      max-width:460px;
+    }
+    .hero-actions .pill{
+      width:100%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+      padding:13px 18px;
+    }
+    .hero-swipe-cue{
+      display:flex;
+      padding-top:18px;
+    }
     .grid4,.process-grid,.form-grid{grid-template-columns:1fr}
     .hero h1{font-size:58px}
     .section{padding:80px 0}
@@ -461,12 +567,15 @@ const styles = `
     .footer-legal{gap:8px 18px}
     .footer-signature{gap:12px}
     .hero-visual{
-      min-height:680px;
+      min-height:calc(100svh - var(--mobile-header-height));
+      aspect-ratio:auto;
+      padding:32px 24px calc(32px + env(safe-area-inset-bottom));
       border-radius:30px;
     }
     .motif-stage{
-      width:calc(100% - 36px);
-      min-height:620px;
+      width:100%;
+      max-width:460px;
+      min-height:0;
     }
     .botanical-layer{
       top:50%;
@@ -482,15 +591,61 @@ const styles = `
       transform-origin:center;
     }
     .visual-card{
-      width:calc(100% - 24px);
+      width:100%;
       min-height:460px;
       padding:30px;
       border-radius:30px;
     }
     .hummingbird-mark{
-      margin:-12px 0 24px;
+      margin:8px 0 32px;
       transform:scale(1.08);
     }
+  }
+  @media (max-width: 640px) and (prefers-reduced-motion: no-preference){
+    .hero[data-scroll-stage]{
+      --stage-height:calc(100svh - var(--mobile-header-height));
+      display:block;
+      height:calc(var(--stage-height) + 120svh);
+    }
+    .hero[data-scroll-stage] .hero-stage{
+      display:block;
+      position:sticky;
+      top:var(--mobile-header-height);
+      height:var(--stage-height);
+      overflow:clip;
+      isolation:isolate;
+    }
+    .hero[data-scroll-stage] .hero-copy,
+    .hero[data-scroll-stage] .hero-visual{
+      position:absolute;
+      inset:0;
+      width:100%;
+    }
+    .hero[data-scroll-stage] .hero-copy{
+      transform:translateY(var(--hero-y, 0px));
+      opacity:var(--hero-opacity, 1);
+    }
+    .hero[data-scroll-stage] .hero-visual{
+      transform:translateY(var(--scene-y, 100%));
+    }
+    .hero[data-scroll-stage] .hero-swipe-cue{
+      transform:translateY(calc(-28px * var(--cue-progress, 0)));
+      opacity:calc(1 - var(--cue-progress, 0));
+    }
+    .hero[data-scroll-stage] .hero-swipe-cue__rule{
+      transform:translateY(calc(-10px * var(--cue-progress, 0))) scaleY(calc(1 - .3 * var(--cue-progress, 0)));
+      transform-origin:top;
+    }
+    .hero[data-scroll-stage] .hero-swipe-cue__label{
+      transform:translateY(calc(-26px * var(--cue-progress, 0)));
+    }
+    .hero[data-scroll-stage] .hero-swipe-cue__chevron{
+      transform:translateY(calc(-34px * var(--cue-progress, 0))) rotate(45deg);
+    }
+  }
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto}
+    .vision-word[data-echo] .vision-word__layer{transition:none}
   }
 
   .menu-button{
@@ -670,14 +825,50 @@ const INQUIRY_FIELD_ERROR_MESSAGES: Record<InquiryField, (validity: ValidityStat
   investment: () => 'Please select an estimated investment range.',
 };
 
+type HeroMotionPhase = 'loader' | 'typography' | 'handoff' | 'settled';
+
+const POST_LOADER_BREATHING_MS = 350;
+const HERO_HANDOFF_MS = 180;
+
 export default function App() {
   const [showLoader, setShowLoader] = useState(() => (
     typeof window === 'undefined' ? true : !window.matchMedia('(prefers-reduced-motion: reduce)').matches
   ));
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(() => (
+    typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  ));
+  const [heroMotionPhase, setHeroMotionPhase] = useState<HeroMotionPhase>('loader');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [formStatus, setFormStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<InquiryField, string>>>({});
   const loaderDuration = getEntranceDuration();
+  const handoffTimerRef = useRef<number | null>(null);
+  const visionStartTimerRef = useRef<number | null>(null);
+
+  const clearHandoffTimer = useCallback(() => {
+    if (handoffTimerRef.current === null) return;
+    window.clearTimeout(handoffTimerRef.current);
+    handoffTimerRef.current = null;
+  }, []);
+
+  const clearVisionStartTimer = useCallback(() => {
+    if (visionStartTimerRef.current === null) return;
+    window.clearTimeout(visionStartTimerRef.current);
+    visionStartTimerRef.current = null;
+  }, []);
+
+  useEffect(() => () => {
+    clearHandoffTimer();
+    clearVisionStartTimer();
+  }, [clearHandoffTimer, clearVisionStartTimer]);
+
+  useEffect(() => {
+    const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const syncMotionPreference = () => setPrefersReducedMotion(motionQuery.matches);
+    syncMotionPreference();
+    motionQuery.addEventListener('change', syncMotionPreference);
+    return () => motionQuery.removeEventListener('change', syncMotionPreference);
+  }, []);
 
   useEffect(() => {
     if (!showLoader) return;
@@ -708,6 +899,40 @@ export default function App() {
   const handleLoaderUpdate = (state: EntranceState) => {
     if (state.reducedMotion || state.time >= loaderDuration) setShowLoader(false);
   };
+
+  useEffect(() => {
+    if (showLoader) {
+      clearVisionStartTimer();
+      clearHandoffTimer();
+      setHeroMotionPhase('loader');
+      return;
+    }
+    if (prefersReducedMotion) {
+      clearVisionStartTimer();
+      clearHandoffTimer();
+      setHeroMotionPhase('settled');
+      return;
+    }
+    setHeroMotionPhase((phase) => {
+      if (phase !== 'loader') return phase;
+      clearVisionStartTimer();
+      visionStartTimerRef.current = window.setTimeout(() => {
+        visionStartTimerRef.current = null;
+        setHeroMotionPhase('typography');
+      }, POST_LOADER_BREATHING_MS);
+      return phase;
+    });
+  }, [clearHandoffTimer, clearVisionStartTimer, prefersReducedMotion, showLoader]);
+
+  const handleVisionSequenceComplete = useCallback(() => {
+    if (prefersReducedMotion) return;
+    setHeroMotionPhase('handoff');
+    clearHandoffTimer();
+    handoffTimerRef.current = window.setTimeout(() => {
+      handoffTimerRef.current = null;
+      setHeroMotionPhase('settled');
+    }, HERO_HANDOFF_MS);
+  }, [clearHandoffTimer, prefersReducedMotion]);
 
   // hooks into native constraint validation (required/type=email) instead of replacing it: the browser
   // still blocks submission and focuses the first invalid field on its own; this only swaps the native
@@ -751,6 +976,10 @@ export default function App() {
   const navRef = useRef<HTMLElement>(null);
   const mainRef = useRef<HTMLElement>(null);
   const footerRef = useRef<HTMLElement>(null);
+  const heroCopyRef = useRef<HTMLDivElement>(null);
+  const heroVisualRef = useRef<HTMLDivElement>(null);
+  const heroRegionRef = useRef<HTMLElement>(null);
+  const heroStageRef = useRef<HTMLDivElement>(null);
 
   // the close button renders outside .menu-overlay in the DOM (it escapes .nav's stacking context) but is
   // logically the overlay's first focus stop, so the trap/tab-order group is assembled from both
@@ -901,6 +1130,15 @@ export default function App() {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isMenuOpen]);
 
+  const { stageAutoplayReady, stageHeroAway } = useHeroScrollStage({
+    enabled: !prefersReducedMotion,
+    regionRef: heroRegionRef,
+    stageRef: heroStageRef,
+    headerRef: navRef,
+    firstRef: heroCopyRef,
+    secondRef: heroVisualRef,
+  });
+
   const closeMenuForNavigation = () => {
     navigatingRef.current = true;
     setIsMenuOpen(false);
@@ -988,20 +1226,40 @@ export default function App() {
       </div>
 
       <main ref={mainRef}>
-      <section id="home" className="hero" tabIndex={-1}>
-        <div className="hero-copy">
-          <div className="eyebrow">Brand Strategy & Identity Studio</div>
-          <h1>Where vision parallels reality.</h1>
-          <p className="lead">
-            Joint Ambition aligns what a business is with how it is perceived through strategy, identity systems, handcrafted brand applications, and custom web development.
-          </p>
-          <div className="hero-actions">
-            <a className="pill dark" href="#strategy">Explore Strategy</a>
-            <a className="pill" href="#begin">Begin With Intention</a>
+      <section id="home" className="hero" tabIndex={-1} ref={heroRegionRef}>
+        <div className="hero-stage" ref={heroStageRef}>
+        <div className="hero-copy" ref={heroCopyRef}>
+          <div className="hero-copy__scene-content">
+            <div className="eyebrow">Brand Strategy & Identity Studio</div>
+            <h1>
+              Where{' '}
+              <VisionWord
+                active={heroMotionPhase === 'typography'}
+                reducedMotion={prefersReducedMotion}
+                onComplete={handleVisionSequenceComplete}
+                reentryEnabled={heroMotionPhase === 'settled'}
+                stageHeroAway={stageHeroAway}
+                heroRef={heroCopyRef}
+                headerRef={navRef}
+              />{' '}
+              parallels reality.
+            </h1>
+            <p className="lead">
+              Joint Ambition aligns what a business is with how it is perceived through strategy, identity systems, handcrafted brand applications, and custom web development.
+            </p>
+            <div className="hero-actions">
+              <a className="pill dark" href="#strategy">Explore Strategy</a>
+              <a className="pill" href="#begin">Begin With Intention</a>
+            </div>
+          </div>
+          <div className="hero-swipe-cue" aria-hidden="true">
+            <span className="hero-swipe-cue__rule" />
+            <span className="hero-swipe-cue__label">Swipe</span>
+            <span className="hero-swipe-cue__chevron" />
           </div>
         </div>
 
-        <div className="hero-visual">
+        <div className="hero-visual" ref={heroVisualRef}>
           <div className="botanical-layer" aria-hidden="true">
             <picture className="botanical-decoration">
               <source media="(max-width: 640px)" srcSet={botanicalMobile} />
@@ -1011,7 +1269,7 @@ export default function App() {
           <div className="motif-stage">
             <div className="visual-card">
               <div className="hummingbird-mark">
-                  <Hummingbird size="100%" ring={false} color="#eee7da" strokeWidth={5.5} className="signature-motif-icon" label="Joint Ambition hummingbird" />
+                  <Hummingbird size="100%" ring={false} color="#eee7da" strokeWidth={5.5} className="signature-motif-icon" label="Joint Ambition hummingbird" autoplayEnabled={heroMotionPhase === 'settled' && !prefersReducedMotion} stageAutoplayReady={stageAutoplayReady} />
               </div>
               <div className="eyebrow" style={{ color: '#bdb6ad' }}>Signature Motif</div>
               <h2>Precision in motion.</h2>
@@ -1020,6 +1278,7 @@ export default function App() {
               </p>
             </div>
           </div>
+        </div>
         </div>
       </section>
 

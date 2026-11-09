@@ -12,6 +12,9 @@ export interface HummingbirdProps {
   className?: string;
   style?: CSSProperties;
   label?: string;
+  autoplayEnabled?: boolean;
+  /** null uses viewport hysteresis; false re-arms the stage, true permits one autoplay. */
+  stageAutoplayReady?: boolean | null;
 }
 
 export function HummingbirdVector({ className = 'ja-hummingbird__svg' }: { className?: string }) {
@@ -37,11 +40,32 @@ export default function Hummingbird({
   ring = true,
   className = '',
   style,
+  autoplayEnabled = true,
+  stageAutoplayReady = null,
 }: HummingbirdProps) {
   const hostRef = useRef<HTMLDivElement>(null);
   const motionRef = useRef<ReturnType<typeof attachHummingbirdMotion> | null>(null);
   const autoplayArmedRef = useRef(true);
+  const autoplayEnabledRef = useRef(autoplayEnabled);
+  const stageAutoplayReadyRef = useRef(stageAutoplayReady);
+  const visibilityRatioRef = useRef(0);
   const reducedMotionRef = useRef(false);
+
+  useEffect(() => {
+    autoplayEnabledRef.current = autoplayEnabled;
+    stageAutoplayReadyRef.current = stageAutoplayReady;
+    if (stageAutoplayReady === false) autoplayArmedRef.current = true;
+    if (
+      autoplayEnabled
+      && stageAutoplayReady !== false
+      && !reducedMotionRef.current
+      && autoplayArmedRef.current
+      && visibilityRatioRef.current >= 0.4
+    ) {
+      motionRef.current?.play();
+      autoplayArmedRef.current = false;
+    }
+  }, [autoplayEnabled, stageAutoplayReady]);
 
   useEffect(() => {
     const host = hostRef.current;
@@ -62,12 +86,13 @@ export default function Hummingbird({
         const entry = entries[0];
         if (!entry || reducedMotionRef.current) return;
         const ratio = entry.intersectionRatio;
+        visibilityRatioRef.current = ratio;
+        if (stageAutoplayReadyRef.current === null && ratio <= 0.12) autoplayArmedRef.current = true;
+        if (!autoplayEnabledRef.current || stageAutoplayReadyRef.current === false) return;
         if (ratio >= 0.4 && autoplayArmedRef.current) {
           motionRef.current?.play();
           autoplayArmedRef.current = false;
-          return;
         }
-        if (ratio <= 0.12) autoplayArmedRef.current = true;
       },
       { threshold: [0, 0.12, 0.4, 1] },
     );
