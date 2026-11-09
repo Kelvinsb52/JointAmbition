@@ -675,12 +675,14 @@ const styles = `
       --stage-height:calc(100svh - var(--mobile-header-height));
       display:block;
       height:calc(var(--stage-height) + 120svh);
+      border-bottom:none;
     }
     .hero[data-scroll-stage] .hero-stage{
       display:block;
       position:sticky;
       top:var(--mobile-header-height);
       height:var(--stage-height);
+      background:var(--paper2);
       overflow:clip;
       isolation:isolate;
     }
@@ -696,6 +698,7 @@ const styles = `
     }
     .hero[data-scroll-stage] .hero-visual{
       transform:translateY(var(--scene-y, 100%));
+      border-top:1px solid var(--line);
     }
     .hero[data-scroll-stage] .hero-swipe-cue{
       transform:translateY(calc(-28px * var(--cue-progress, 0)));

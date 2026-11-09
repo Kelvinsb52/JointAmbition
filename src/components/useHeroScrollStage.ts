@@ -10,6 +10,9 @@ interface HeroScrollStageOptions {
 }
 
 const clamp = (value: number) => Math.max(0, Math.min(1, value));
+const STAGE_VISUAL_COMPLETE_AT = 0.9;
+const STAGE_VISUAL_SMOOTHING_MS = 70;
+const STAGE_VISUAL_EPSILON = 0.0015;
 
 export function useHeroScrollStage({
   enabled, regionRef, stageRef, headerRef, firstRef, secondRef,
@@ -35,10 +38,15 @@ export function useHeroScrollStage({
     const actions = first.querySelector<HTMLElement>('.hero-actions');
     const motif = second.querySelector<HTMLElement>('.motif-stage');
     let frame = 0;
+    let visualFrame = 0;
+    let lastVisualFrameTime = 0;
     let distance = 0;
     let headerHeight = 0;
     let stageHeight = 0;
     let actionsBottom = 0;
+    let targetProgress = 0;
+    let targetVisualProgress = 0;
+    let displayedVisualProgress = 0;
     let autoplayReady: boolean | null = null;
     let heroAway: boolean | null = null;
     const syncHeroAway = (away: boolean | null) => {
@@ -52,12 +60,7 @@ export function useHeroScrollStage({
       setStageAutoplayReady(ready);
     };
 
-    const update = () => {
-      frame = 0;
-      if (!distance) return;
-      const progress = clamp((headerHeight - region.getBoundingClientRect().top) / distance);
-      syncHeroAway(progress >= 0.85 ? true : progress <= 0.25 ? false : heroAway ?? false);
-      syncAutoplay(progress >= 0.6 ? true : progress <= 0.2 ? false : autoplayReady ?? false);
+    const applyVisualProgress = (progress: number) => {
       const entry = clamp((progress - 0.1) / 0.78);
       const reveal = 1 - (1 - entry) ** 2;
       const cueProgress = clamp(progress / 0.3);
@@ -68,8 +71,47 @@ export function useHeroScrollStage({
       // Covered CTAs must not remain keyboard focus targets underneath the second panel.
       if (actions) actions.inert = actionsBottom - 36 * progress > stageHeight * (1 - reveal);
     };
+    const stepVisualProgress = (time: number) => {
+      visualFrame = 0;
+      const dt = lastVisualFrameTime ? Math.min(time - lastVisualFrameTime, 64) : 16;
+      lastVisualFrameTime = time;
+      const alpha = 1 - Math.exp(-dt / STAGE_VISUAL_SMOOTHING_MS);
+      displayedVisualProgress += (targetVisualProgress - displayedVisualProgress) * alpha;
+      if (Math.abs(targetVisualProgress - displayedVisualProgress) <= STAGE_VISUAL_EPSILON) {
+        displayedVisualProgress = targetVisualProgress;
+      }
+      applyVisualProgress(displayedVisualProgress);
+      if (displayedVisualProgress !== targetVisualProgress) {
+        visualFrame = requestAnimationFrame(stepVisualProgress);
+      }
+    };
+    const syncVisualProgress = (immediate = false) => {
+      if (immediate) {
+        if (visualFrame) {
+          cancelAnimationFrame(visualFrame);
+          visualFrame = 0;
+        }
+        lastVisualFrameTime = 0;
+        displayedVisualProgress = targetVisualProgress;
+        applyVisualProgress(displayedVisualProgress);
+        return;
+      }
+      if (!visualFrame) visualFrame = requestAnimationFrame(stepVisualProgress);
+    };
+    const updateStage = (immediate = false) => {
+      if (!distance) return;
+      targetProgress = clamp((headerHeight - region.getBoundingClientRect().top) / distance);
+      targetVisualProgress = clamp(targetProgress / STAGE_VISUAL_COMPLETE_AT);
+      syncHeroAway(targetProgress >= 0.85 ? true : targetProgress <= 0.25 ? false : heroAway ?? false);
+      syncAutoplay(targetProgress >= 0.6 ? true : targetProgress <= 0.2 ? false : autoplayReady ?? false);
+      syncVisualProgress(immediate);
+    };
+    const updateFromFrame = () => {
+      frame = 0;
+      updateStage(false);
+    };
     const schedule = () => {
-      if (distance && !frame) frame = requestAnimationFrame(update);
+      if (distance && !frame) frame = requestAnimationFrame(updateFromFrame);
     };
     const measure = () => {
       const firstStyle = getComputedStyle(first);
@@ -92,7 +134,7 @@ export function useHeroScrollStage({
         stage.removeAttribute('style');
         if (actions) actions.inert = false;
       }
-      update();
+      updateStage(true);
     };
 
     const observer = new ResizeObserver(measure);
@@ -105,6 +147,7 @@ export function useHeroScrollStage({
     mobile.addEventListener('change', measure);
     return () => {
       cancelAnimationFrame(frame);
+      cancelAnimationFrame(visualFrame);
       observer.disconnect();
       window.removeEventListener('scroll', schedule);
       window.removeEventListener('resize', measure);
