@@ -50,6 +50,8 @@ export default function Hummingbird({
   const stageAutoplayReadyRef = useRef(stageAutoplayReady);
   const visibilityRatioRef = useRef(0);
   const reducedMotionRef = useRef(false);
+  const scrollDirectionRef = useRef(0);
+  const suppressedUntilLeaveRef = useRef(false);
 
   useEffect(() => {
     autoplayEnabledRef.current = autoplayEnabled;
@@ -66,6 +68,18 @@ export default function Hummingbird({
       autoplayArmedRef.current = false;
     }
   }, [autoplayEnabled, stageAutoplayReady]);
+
+  useEffect(() => {
+    let lastY = window.scrollY;
+    const onScroll = () => {
+      const y = window.scrollY;
+      const delta = y - lastY;
+      if (Math.abs(delta) > 1) scrollDirectionRef.current = Math.sign(delta);
+      lastY = y;
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   useEffect(() => {
     const host = hostRef.current;
@@ -87,9 +101,20 @@ export default function Hummingbird({
         if (!entry || reducedMotionRef.current) return;
         const ratio = entry.intersectionRatio;
         visibilityRatioRef.current = ratio;
-        if (stageAutoplayReadyRef.current === null && ratio <= 0.12) autoplayArmedRef.current = true;
+        if (stageAutoplayReadyRef.current === null && ratio <= 0.12) {
+          autoplayArmedRef.current = true;
+          suppressedUntilLeaveRef.current = false;
+        }
         if (!autoplayEnabledRef.current || stageAutoplayReadyRef.current === false) return;
         if (ratio >= 0.4 && autoplayArmedRef.current) {
+          if (stageAutoplayReadyRef.current === null) {
+            if (suppressedUntilLeaveRef.current) return;
+            if (scrollDirectionRef.current < 0) {
+              suppressedUntilLeaveRef.current = true;
+              autoplayArmedRef.current = false;
+              return;
+            }
+          }
           motionRef.current?.play();
           autoplayArmedRef.current = false;
         }

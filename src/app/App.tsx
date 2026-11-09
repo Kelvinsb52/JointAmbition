@@ -312,6 +312,24 @@ const styles = `
   .section h3{font-size:34px;line-height:1.08}
   .body-copy{font-size:17px;line-height:1.9;color:#4d4841}
   .body-copy p+p{margin-top:22px}
+  .strategy-editorial{
+    max-width:560px;
+    margin-top:56px;
+    justify-self:start;
+  }
+  .strategy-editorial__meta{
+    font-size:10px;
+    text-transform:uppercase;
+    letter-spacing:.24em;
+    color:#5f5951;
+  }
+  .strategy-editorial__rule{
+    height:1px;
+    width:100%;
+    max-width:320px;
+    margin:10px 0 18px;
+    background:var(--line);
+  }
   .dark .body-copy{color:#c8c1b7}
   .quote{
     margin-top:34px;padding:28px;border:1px solid var(--line);border-radius:24px;background:var(--paper);
@@ -322,6 +340,56 @@ const styles = `
   .card{
     border:1px solid var(--line);border-radius:24px;background:var(--paper2);
     padding:26px;min-height:240px;display:flex;flex-direction:column;
+  }
+  .strategy-card{
+    transform:translateY(10px) scale(.988);
+    opacity:.95;
+    transform-origin:center center;
+    transition:transform 280ms cubic-bezier(.22,.61,.36,1),opacity 220ms cubic-bezier(.22,.61,.36,1);
+    will-change:transform,opacity;
+  }
+  .strategy-grid--revealed .strategy-card{
+    transform:translateY(0) scale(1);
+    opacity:1;
+    animation:strategyCardSettle 340ms cubic-bezier(.22,1,.36,1);
+  }
+  .strategy-grid--revealed .strategy-card--01{animation-delay:0ms}
+  .strategy-grid--revealed .strategy-card--02{animation-delay:60ms}
+  .strategy-grid--revealed .strategy-card--03{animation-delay:120ms}
+  .strategy-grid--revealed .strategy-card--04{animation-delay:180ms}
+  @keyframes strategyCardSettle{
+    from{transform:translateY(10px) scale(.988);opacity:.95}
+    to{transform:translateY(0) scale(1);opacity:1}
+  }
+  @media (hover:hover) and (pointer:fine){
+    .strategy-card:hover{transform:translateY(-4px) scale(1.015)}
+    .strategy-card:active{
+      transform:translateY(-2px) scale(1.006);
+      transition-duration:140ms;
+    }
+  }
+  @media (hover:none),(pointer:coarse){
+    .strategy-card:active{
+      transform:translateY(-1px) scale(0.998);
+      transition-duration:120ms;
+    }
+  }
+  @media (hover:none),(pointer:coarse){
+    .strategy-card{
+      transform:none;
+      opacity:1;
+    }
+    .strategy-grid--revealed .strategy-card{animation:none}
+    .strategy-grid--revealed .strategy-card.strategy-card--mobile-active{transform:translateY(-2px) scale(1.022)}
+    .strategy-grid--revealed .strategy-card.strategy-card--mobile-active:active{transform:translateY(-1px) scale(1.012)}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .strategy-card{
+      transform:none;
+      opacity:1;
+      transition:none;
+      animation:none !important;
+    }
   }
   .card .num{font-size:11px;letter-spacing:.2em;color:var(--muted);text-transform:uppercase}
   .card h3{margin-top:26px;font-size:30px}
@@ -499,6 +567,7 @@ const styles = `
   }
   @media (max-width: 1200px){
     .hero,.split{grid-template-columns:1fr}
+    .strategy-editorial{margin-top:24px;max-width:640px}
     .hero-visual{
       width:min(684px,100%);
       aspect-ratio:684 / 819;
@@ -810,6 +879,7 @@ const styles = `
 
 // keep in sync with the "@media (max-width: 1080px)" nav-collapse breakpoint used throughout `styles` above
 const COMPACT_NAV_QUERY = '(max-width: 1080px)';
+const STRATEGY_MOBILE_ACTIVATION_QUERY = '(hover: none), (pointer: coarse)';
 
 // focusable-element selector used to build the mobile-menu's focus-trap group
 const MENU_FOCUSABLE_SELECTOR = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -980,6 +1050,12 @@ export default function App() {
   const heroVisualRef = useRef<HTMLDivElement>(null);
   const heroRegionRef = useRef<HTMLElement>(null);
   const heroStageRef = useRef<HTMLDivElement>(null);
+  const strategyGridRef = useRef<HTMLDivElement>(null);
+  const [strategyCardsRevealed, setStrategyCardsRevealed] = useState(false);
+  const [isStrategyMobileLayout, setIsStrategyMobileLayout] = useState(() => (
+    typeof window !== 'undefined' && window.matchMedia(STRATEGY_MOBILE_ACTIVATION_QUERY).matches
+  ));
+  const [activeStrategyCard, setActiveStrategyCard] = useState<number | null>(null);
 
   // the close button renders outside .menu-overlay in the DOM (it escapes .nav's stacking context) but is
   // logically the overlay's first focus stop, so the trap/tab-order group is assembled from both
@@ -1138,6 +1214,112 @@ export default function App() {
     firstRef: heroCopyRef,
     secondRef: heroVisualRef,
   });
+
+  useEffect(() => {
+    const mobileLayoutQuery = window.matchMedia(STRATEGY_MOBILE_ACTIVATION_QUERY);
+    const syncMobileLayout = () => setIsStrategyMobileLayout(mobileLayoutQuery.matches);
+    syncMobileLayout();
+    mobileLayoutQuery.addEventListener('change', syncMobileLayout);
+    return () => mobileLayoutQuery.removeEventListener('change', syncMobileLayout);
+  }, []);
+
+  useEffect(() => {
+    if (prefersReducedMotion || strategyCardsRevealed) return;
+    const strategyGrid = strategyGridRef.current;
+    if (!strategyGrid) return;
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        if (entry.intersectionRatio < 0.28) return;
+        setStrategyCardsRevealed(true);
+        observer.disconnect();
+      });
+    }, { threshold: [0, 0.28, 0.45], rootMargin: '0px 0px -8% 0px' });
+
+    observer.observe(strategyGrid);
+    return () => observer.disconnect();
+  }, [prefersReducedMotion, strategyCardsRevealed]);
+
+  useEffect(() => {
+    if (prefersReducedMotion || !isStrategyMobileLayout) {
+      setActiveStrategyCard(null);
+      return;
+    }
+
+    const strategyGrid = strategyGridRef.current;
+    if (!strategyGrid) return;
+    const cards = Array.from(strategyGrid.querySelectorAll<HTMLElement>('.strategy-card'));
+    if (!cards.length) return;
+
+    let frame: number | null = null;
+    let currentActiveCardRef: number | null = null;
+
+    const resolveActiveCard = (force = false) => {
+      frame = null;
+      const viewportHeight = window.innerHeight;
+      const viewportCenter = viewportHeight * 0.5;
+      const activationBandTop = viewportHeight * 0.4;
+      const activationBandBottom = viewportHeight * 0.6;
+      const extendedBandTop = viewportHeight * 0.34;
+      const extendedBandBottom = viewportHeight * 0.66;
+
+      let bestIndex: number | null = null;
+      let bestDistance = Number.POSITIVE_INFINITY;
+
+      cards.forEach((card) => {
+        const index = Number(card.dataset.strategyCardIndex ?? '');
+        if (!Number.isFinite(index)) return;
+        const rect = card.getBoundingClientRect();
+        const center = rect.top + (rect.height / 2);
+        if (center < activationBandTop || center > activationBandBottom) return;
+        const distance = Math.abs(center - viewportCenter);
+        if (distance < bestDistance) {
+          bestDistance = distance;
+          bestIndex = index;
+        }
+      });
+
+      if (bestIndex !== null) {
+        currentActiveCardRef = bestIndex;
+        setActiveStrategyCard(bestIndex);
+        return;
+      }
+
+      const previous = currentActiveCardRef;
+      if (!force && previous !== null) {
+        const previousCard = cards[previous - 1];
+        if (previousCard) {
+          const rect = previousCard.getBoundingClientRect();
+          const center = rect.top + (rect.height / 2);
+          if (center >= extendedBandTop && center <= extendedBandBottom) {
+            setActiveStrategyCard(previous);
+            return;
+          }
+        }
+      }
+
+      currentActiveCardRef = null;
+      setActiveStrategyCard(null);
+    };
+
+    const queueResolve = (force = false) => {
+      if (frame !== null) return;
+      frame = window.requestAnimationFrame(() => resolveActiveCard(force));
+    };
+
+    const handleScroll = () => queueResolve();
+    const handleResize = () => queueResolve(true);
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('resize', handleResize);
+    queueResolve(true);
+
+    return () => {
+      if (frame !== null) window.cancelAnimationFrame(frame);
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [isStrategyMobileLayout, prefersReducedMotion]);
 
   const closeMenuForNavigation = () => {
     navigatingRef.current = true;
@@ -1315,30 +1497,47 @@ export default function App() {
               <div className="eyebrow">Strategy</div>
               <h2 style={{ marginTop: 18 }}>Before a brand is designed, it must be defined.</h2>
             </div>
-            <div className="body-copy">
+            <div className="body-copy strategy-editorial">
+              <div className="strategy-editorial__meta">01 / Definition</div>
+              <div className="strategy-editorial__rule" aria-hidden="true" />
               <p>
                 Strategy gives shape to how a venture is understood, positioned, and remembered. Joint Ambition works across brand architecture and identity systems, with handcrafted applications and custom web development that shape how a business is understood, trusted, and remembered.
               </p>
             </div>
           </div>
 
-          <div className="grid4">
-            <div className="card">
+          <div
+            className={`grid4 strategy-grid${strategyCardsRevealed ? ' strategy-grid--revealed' : ''}`}
+            ref={strategyGridRef}
+          >
+            <div
+              className={`card strategy-card strategy-card--01${activeStrategyCard === 1 ? ' strategy-card--mobile-active' : ''}`}
+              data-strategy-card-index="1"
+            >
               <div className="num">01</div>
               <h3>Brand Architecture</h3>
               <p>Strategic foundation, positioning, perception, messaging, and brand direction.</p>
             </div>
-            <div className="card">
+            <div
+              className={`card strategy-card strategy-card--02${activeStrategyCard === 2 ? ' strategy-card--mobile-active' : ''}`}
+              data-strategy-card-index="2"
+            >
               <div className="num">02</div>
               <h3>Identity Systems</h3>
               <p>Logos, typography, color, spacing, visual standards, and brand guidelines.</p>
             </div>
-            <div className="card">
+            <div
+              className={`card strategy-card strategy-card--03${activeStrategyCard === 3 ? ' strategy-card--mobile-active' : ''}`}
+              data-strategy-card-index="3"
+            >
               <div className="num">03</div>
               <h3>Handcrafted Applications</h3>
               <p>Custom graphics, campaign visuals, print materials, presentations, and digital assets built from the identity system.</p>
             </div>
-            <div className="card">
+            <div
+              className={`card strategy-card strategy-card--04${activeStrategyCard === 4 ? ' strategy-card--mobile-active' : ''}`}
+              data-strategy-card-index="4"
+            >
               <div className="num">04</div>
               <h3>Custom Web Development</h3>
               <p>Refined websites and digital experiences built to express the brand clearly and intentionally.</p>
